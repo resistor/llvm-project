@@ -239,17 +239,31 @@ private:
       const BasicBlock *BB;
     };
 
+    void log() {
+      for (const auto &it : NumToLeaders) {
+        auto it2 = LeaderMap::leader_iterator(&it.second);
+        auto end = LeaderMap::leader_iterator(nullptr);
+        size_t size = 0;
+        while (it2 != end) {
+          ++size;
+          ++it2;
+        }
+        dbgs() << "GVNHIST: " << size << "\n";
+      }
+    }
+
   private:
     struct LeaderListNode {
       LeaderTableEntry Entry;
-      LeaderListNode *Next;
+      TinyPtrVector<LeaderTableEntry *> Tail;
     };
     DenseMap<uint32_t, LeaderListNode> NumToLeaders;
     BumpPtrAllocator TableAllocator;
 
   public:
     class leader_iterator {
-      const LeaderListNode *Current;
+      const LeaderListNode *List;
+      size_t Index;
 
     public:
       using iterator_category = std::forward_iterator_tag;
@@ -258,19 +272,29 @@ private:
       using pointer = value_type *;
       using reference = value_type &;
 
-      leader_iterator(const LeaderListNode *C) : Current(C) {}
+      leader_iterator(const LeaderListNode *L) : List(L), Index(0) {}
+      leader_iterator(const LeaderListNode *L, size_t I) : List(L), Index(I) {}
       leader_iterator &operator++() {
-        assert(Current && "Dereferenced end of leader list!");
-        Current = Current->Next;
+        ++Index;
+        if (Index == List->Tail.size() + 1) {
+          List = nullptr;
+          Index = 0;
+        }
         return *this;
       }
       bool operator==(const leader_iterator &Other) const {
-        return Current == Other.Current;
+        return List == Other.List && Index == Other.Index;
       }
       bool operator!=(const leader_iterator &Other) const {
-        return Current != Other.Current;
+        return List != Other.List || Index != Other.Index;
       }
-      reference operator*() const { return Current->Entry; }
+      reference operator*() const {
+        if (Index == 0) {
+          return List->Entry;
+        } else {
+          return *List->Tail[Index - 1];
+        }
+      }
     };
 
     iterator_range<leader_iterator> getLeaders(uint32_t N) {

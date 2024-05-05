@@ -738,39 +738,35 @@ void GVNPass::LeaderMap::insert(uint32_t N, Value *V, const BasicBlock *BB) {
     return;
   }
 
-  LeaderListNode *Node = TableAllocator.Allocate<LeaderListNode>();
-  Node->Entry.Val = V;
-  Node->Entry.BB = BB;
-  Node->Next = Curr.Next;
-  Curr.Next = Node;
+  LeaderTableEntry *Node = TableAllocator.Allocate<LeaderTableEntry>();
+  Node->Val = V;
+  Node->BB = BB;
+  Curr.Tail.push_back(Node);
 }
 
 /// Scan the list of values corresponding to a given
 /// value number, and remove the given instruction if encountered.
 void GVNPass::LeaderMap::erase(uint32_t N, Instruction *I,
                                const BasicBlock *BB) {
-  LeaderListNode *Prev = nullptr;
   LeaderListNode *Curr = &NumToLeaders[N];
 
-  while (Curr && (Curr->Entry.Val != I || Curr->Entry.BB != BB)) {
-    Prev = Curr;
-    Curr = Curr->Next;
-  }
-
-  if (!Curr)
-    return;
-
-  if (Prev) {
-    Prev->Next = Curr->Next;
-  } else {
-    if (!Curr->Next) {
+  if (Curr->Entry.Val == I && Curr->Entry.BB == BB) {
+    if (Curr->Tail.empty()) {
       Curr->Entry.Val = nullptr;
       Curr->Entry.BB = nullptr;
     } else {
-      LeaderListNode *Next = Curr->Next;
-      Curr->Entry.Val = Next->Entry.Val;
-      Curr->Entry.BB = Next->Entry.BB;
-      Curr->Next = Next->Next;
+      const LeaderTableEntry *Front = Curr->Tail.front();
+      Curr->Entry = *Front;
+      Curr->Tail.erase(Curr->Tail.begin());
+    }
+
+    return;
+  }
+
+  for (auto II = Curr->Tail.begin(), E = Curr->Tail.end(); II != E; ++II) {
+    if ((*II)->Val == I && (*II)->BB == BB) {
+      Curr->Tail.erase(II);
+      return;
     }
   }
 }
@@ -2794,6 +2790,7 @@ bool GVNPass::runImpl(Function &F, AssumptionCache &RunAC, DominatorTree &RunDT,
     LLVM_DEBUG(dbgs() << "GVN iteration: " << Iteration << "\n");
     (void) Iteration;
     ShouldContinue = iterateOnFunction(F);
+
     Changed |= ShouldContinue;
     ++Iteration;
   }
@@ -2808,6 +2805,8 @@ bool GVNPass::runImpl(Function &F, AssumptionCache &RunAC, DominatorTree &RunDT,
       Changed |= PREChanged;
     }
   }
+
+  // LeaderTable.log();
 
   // FIXME: Should perform GVN again after PRE does something.  PRE can move
   // computations into blocks where they become fully redundant.  Note that
