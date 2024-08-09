@@ -443,7 +443,7 @@ private:
   const uint32_t IndexMask;
   char *ActiveEnd = nullptr;
   std::vector<char *> Blocks;
-  using AllocatorTy = BumpPtrAllocatorImpl<MallocAllocator, 65536>;
+  using AllocatorTy = BumpPtrAllocatorImpl<65536>;
   AllocatorTy MemPool;
 };
 
