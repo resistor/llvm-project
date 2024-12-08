@@ -1332,8 +1332,8 @@ private:
     // Therefore subtracting the weight of the fixed registers from the limit of
     // each pressure set in advance.
     SmallDenseSet<Register, 8> FixedRegs;
-    for (const TargetRegisterClass *TRC : TRI->regclasses()) {
-      for (const MCPhysReg Reg : *TRC)
+    for (const TargetRegisterClass &TRC : TRI->regclasses()) {
+      for (const MCPhysReg Reg : TRC)
         if (isFixedRegister(Reg))
           FixedRegs.insert(Reg);
     }

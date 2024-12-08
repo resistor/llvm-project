@@ -1015,7 +1015,7 @@ AArch64RegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
     LLT SrcTy = MRI.getType(MI.getOperand(1).getReg());
     if (SrcTy.getSizeInBits() != 128)
       break;
-    auto Idx = MRI.getRegClassOrNull(Src) == &AArch64::XSeqPairsClassRegClass
+    auto Idx = MRI.getRegClassOrNull(Src) == AArch64::RegClass(AArch64::XSeqPairsClassRegClassID)
                    ? PMI_FirstGPR
                    : PMI_FirstFPR;
     OpRegBankIdx[0] = Idx;

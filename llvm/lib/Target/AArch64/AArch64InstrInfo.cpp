@@ -310,7 +310,7 @@ void AArch64InstrInfo::insertIndirectBranch(MachineBasicBlock &MBB,
 
   // If there's a free register and it's worth inflating the code size,
   // manually insert the indirect branch.
-  Register Scavenged = RS->FindUnusedReg(&AArch64::GPR64RegClass);
+  Register Scavenged = RS->FindUnusedReg(AArch64::RegClass(AArch64::GPR64RegClassID));
   if (Scavenged != AArch64::NoRegister &&
       MBB.getSectionID() == MBBSectionID::ColdSectionID) {
     buildIndirectBranch(Scavenged, NewDestBB);
@@ -649,7 +649,7 @@ static unsigned canFoldIntoCSel(const MachineRegisterInfo &MRI, unsigned VReg,
   if (!Register::isVirtualRegister(VReg))
     return 0;
 
-  bool Is64Bit = AArch64::GPR64allRegClass.hasSubClassEq(MRI.getRegClass(VReg));
+  bool Is64Bit = AArch64::RegClass(AArch64::GPR64allRegClassID)->hasSubClassEq(MRI.getRegClass(VReg));
   const MachineInstr *DefMI = MRI.getVRegDef(VReg);
   unsigned Opc = 0;
   unsigned SrcOpNum = 0;
@@ -735,8 +735,8 @@ bool AArch64InstrInfo::canInsertSelect(const MachineBasicBlock &MBB,
 
   // GPRs are handled by csel.
   // FIXME: Fold in x+1, -x, and ~x when applicable.
-  if (AArch64::GPR64allRegClass.hasSubClassEq(RC) ||
-      AArch64::GPR32allRegClass.hasSubClassEq(RC)) {
+  if (AArch64::RegClass(AArch64::GPR64allRegClassID)->hasSubClassEq(RC) ||
+      AArch64::RegClass(AArch64::GPR32allRegClassID)->hasSubClassEq(RC)) {
     // Single-cycle csel, csinc, csinv, and csneg.
     CondCycles = 1 + ExtraCondLat;
     TrueCycles = FalseCycles = 1;
@@ -749,8 +749,8 @@ bool AArch64InstrInfo::canInsertSelect(const MachineBasicBlock &MBB,
 
   // Scalar floating point is handled by fcsel.
   // FIXME: Form fabs, fmin, and fmax when applicable.
-  if (AArch64::FPR64RegClass.hasSubClassEq(RC) ||
-      AArch64::FPR32RegClass.hasSubClassEq(RC)) {
+  if (AArch64::RegClass(AArch64::FPR64RegClassID)->hasSubClassEq(RC) ||
+      AArch64::RegClass(AArch64::FPR32RegClassID)->hasSubClassEq(RC)) {
     CondCycles = 5 + ExtraCondLat;
     TrueCycles = FalseCycles = 2;
     return true;
@@ -801,13 +801,13 @@ void AArch64InstrInfo::insertSelect(MachineBasicBlock &MBB,
     Register SrcReg = Cond[2].getReg();
     if (Is64Bit) {
       // cmp reg, #0 is actually subs xzr, reg, #0.
-      MRI.constrainRegClass(SrcReg, &AArch64::GPR64spRegClass);
+      MRI.constrainRegClass(SrcReg, AArch64::RegClass(AArch64::GPR64spRegClassID));
       BuildMI(MBB, I, DL, get(AArch64::SUBSXri), AArch64::XZR)
           .addReg(SrcReg)
           .addImm(0)
           .addImm(0);
     } else {
-      MRI.constrainRegClass(SrcReg, &AArch64::GPR32spRegClass);
+      MRI.constrainRegClass(SrcReg, AArch64::RegClass(AArch64::GPR32spRegClassID));
       BuildMI(MBB, I, DL, get(AArch64::SUBSWri), AArch64::WZR)
           .addReg(SrcReg)
           .addImm(0)
@@ -847,19 +847,19 @@ void AArch64InstrInfo::insertSelect(MachineBasicBlock &MBB,
   unsigned Opc = 0;
   const TargetRegisterClass *RC = nullptr;
   bool TryFold = false;
-  if (MRI.constrainRegClass(DstReg, &AArch64::GPR64RegClass)) {
-    RC = &AArch64::GPR64RegClass;
+  if (MRI.constrainRegClass(DstReg, AArch64::RegClass(AArch64::GPR64RegClassID))) {
+    RC = AArch64::RegClass(AArch64::GPR64RegClassID);
     Opc = AArch64::CSELXr;
     TryFold = true;
-  } else if (MRI.constrainRegClass(DstReg, &AArch64::GPR32RegClass)) {
-    RC = &AArch64::GPR32RegClass;
+  } else if (MRI.constrainRegClass(DstReg, AArch64::RegClass(AArch64::GPR32RegClassID))) {
+    RC = AArch64::RegClass(AArch64::GPR32RegClassID);
     Opc = AArch64::CSELWr;
     TryFold = true;
-  } else if (MRI.constrainRegClass(DstReg, &AArch64::FPR64RegClass)) {
-    RC = &AArch64::FPR64RegClass;
+  } else if (MRI.constrainRegClass(DstReg, AArch64::RegClass(AArch64::FPR64RegClassID))) {
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Opc = AArch64::FCSELDrrr;
-  } else if (MRI.constrainRegClass(DstReg, &AArch64::FPR32RegClass)) {
-    RC = &AArch64::FPR32RegClass;
+  } else if (MRI.constrainRegClass(DstReg, AArch64::RegClass(AArch64::FPR32RegClassID))) {
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     Opc = AArch64::FCSELSrrr;
   }
   assert(RC && "Unsupported regclass");
@@ -2178,8 +2178,8 @@ bool AArch64InstrInfo::isGPRCopy(const MachineInstr &MI) {
   case TargetOpcode::COPY: {
     // GPR32 copies will by lowered to ORRXrs
     Register DstReg = MI.getOperand(0).getReg();
-    return (AArch64::GPR32RegClass.contains(DstReg) ||
-            AArch64::GPR64RegClass.contains(DstReg));
+    return (AArch64::RegClass(AArch64::GPR32RegClassID)->contains(DstReg) ||
+            AArch64::RegClass(AArch64::GPR64RegClassID)->contains(DstReg));
   }
   case AArch64::ORRXrs: // orr Xd, Xzr, Xm (LSL #0)
     if (MI.getOperand(1).getReg() == AArch64::XZR) {
@@ -2207,7 +2207,7 @@ bool AArch64InstrInfo::isFPRCopy(const MachineInstr &MI) {
     break;
   case TargetOpcode::COPY: {
     Register DstReg = MI.getOperand(0).getReg();
-    return AArch64::FPR128RegClass.contains(DstReg);
+    return AArch64::RegClass(AArch64::FPR128RegClassID)->contains(DstReg);
   }
   case AArch64::ORRv16i8:
     if (MI.getOperand(1).getReg() == MI.getOperand(2).getReg()) {
@@ -3560,7 +3560,7 @@ MachineInstr *AArch64InstrInfo::emitLdStWithAddr(MachineInstr &MemI,
     if (AM.ScaledReg) {
       // The new instruction will be in the form `ldr Rt, [Xn, Xm, lsl #imm]`.
       unsigned Opcode = regOffsetOpcode(MemI.getOpcode());
-      MRI.constrainRegClass(AM.BaseReg, &AArch64::GPR64spRegClass);
+      MRI.constrainRegClass(AM.BaseReg, AArch64::RegClass(AArch64::GPR64spRegClassID));
       auto B = BuildMI(MBB, MemI, DL, get(Opcode))
                    .addReg(MemI.getOperand(0).getReg(),
                            MemI.mayLoad() ? RegState::Define : 0)
@@ -3600,12 +3600,12 @@ MachineInstr *AArch64InstrInfo::emitLdStWithAddr(MachineInstr &MemI,
     assert(AM.ScaledReg && !AM.Displacement &&
            "Address offset can be a register or an immediate, but not both");
     unsigned Opcode = offsetExtendOpcode(MemI.getOpcode());
-    MRI.constrainRegClass(AM.BaseReg, &AArch64::GPR64spRegClass);
+    MRI.constrainRegClass(AM.BaseReg, AArch64::RegClass(AArch64::GPR64spRegClassID));
     // Make sure the offset register is in the correct register class.
     Register OffsetReg = AM.ScaledReg;
     const TargetRegisterClass *RC = MRI.getRegClass(OffsetReg);
-    if (RC->hasSuperClassEq(&AArch64::GPR64RegClass)) {
-      OffsetReg = MRI.createVirtualRegister(&AArch64::GPR32RegClass);
+    if (RC->hasSuperClassEq(AArch64::RegClass(AArch64::GPR64RegClassID))) {
+      OffsetReg = MRI.createVirtualRegister(AArch64::RegClass(AArch64::GPR32RegClassID));
       BuildMI(MBB, MemI, DL, get(TargetOpcode::COPY), OffsetReg)
           .addReg(AM.ScaledReg, 0, AArch64::sub_32);
     }
@@ -4566,10 +4566,10 @@ bool AArch64InstrInfo::isHForm(const MachineInstr &MI) {
       return false;
     auto Reg = Op.getReg();
     if (Reg.isPhysical())
-      return AArch64::FPR16RegClass.contains(Reg);
+      return AArch64::RegClass(AArch64::FPR16RegClassID)->contains(Reg);
     const TargetRegisterClass *TRC = ::getRegClass(MI, Reg);
-    return TRC == &AArch64::FPR16RegClass ||
-           TRC == &AArch64::FPR16_loRegClass;
+    return TRC == AArch64::RegClass(AArch64::FPR16RegClassID) ||
+           TRC == AArch64::RegClass(AArch64::FPR16_loRegClassID);
   };
   return llvm::any_of(MI.operands(), IsHFPR);
 }
@@ -4580,10 +4580,10 @@ bool AArch64InstrInfo::isQForm(const MachineInstr &MI) {
       return false;
     auto Reg = Op.getReg();
     if (Reg.isPhysical())
-      return AArch64::FPR128RegClass.contains(Reg);
+      return AArch64::RegClass(AArch64::FPR128RegClassID)->contains(Reg);
     const TargetRegisterClass *TRC = ::getRegClass(MI, Reg);
-    return TRC == &AArch64::FPR128RegClass ||
-           TRC == &AArch64::FPR128_loRegClass;
+    return TRC == AArch64::RegClass(AArch64::FPR128RegClassID) ||
+           TRC == AArch64::RegClass(AArch64::FPR128_loRegClassID);
   };
   return llvm::any_of(MI.operands(), IsQFPR);
 }
@@ -4618,11 +4618,11 @@ bool AArch64InstrInfo::isFpOrNEON(Register Reg) {
   if (Reg == 0)
     return false;
   assert(Reg.isPhysical() && "Expected physical register in isFpOrNEON");
-  return AArch64::FPR128RegClass.contains(Reg) ||
-         AArch64::FPR64RegClass.contains(Reg) ||
-         AArch64::FPR32RegClass.contains(Reg) ||
-         AArch64::FPR16RegClass.contains(Reg) ||
-         AArch64::FPR8RegClass.contains(Reg);
+  return AArch64::RegClass(AArch64::FPR128RegClassID)->contains(Reg) ||
+         AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg) ||
+         AArch64::RegClass(AArch64::FPR32RegClassID)->contains(Reg) ||
+         AArch64::RegClass(AArch64::FPR16RegClassID)->contains(Reg) ||
+         AArch64::RegClass(AArch64::FPR8RegClassID)->contains(Reg);
 }
 
 bool AArch64InstrInfo::isFpOrNEON(const MachineInstr &MI) {
@@ -4634,12 +4634,12 @@ bool AArch64InstrInfo::isFpOrNEON(const MachineInstr &MI) {
       return isFpOrNEON(Reg);
 
     const TargetRegisterClass *TRC = ::getRegClass(MI, Reg);
-    return TRC == &AArch64::FPR128RegClass ||
-           TRC == &AArch64::FPR128_loRegClass ||
-           TRC == &AArch64::FPR64RegClass ||
-           TRC == &AArch64::FPR64_loRegClass ||
-           TRC == &AArch64::FPR32RegClass || TRC == &AArch64::FPR16RegClass ||
-           TRC == &AArch64::FPR8RegClass;
+    return TRC == AArch64::RegClass(AArch64::FPR128RegClassID) ||
+           TRC == AArch64::RegClass(AArch64::FPR128_loRegClassID) ||
+           TRC == AArch64::RegClass(AArch64::FPR64RegClassID) ||
+           TRC == AArch64::RegClass(AArch64::FPR64_loRegClassID) ||
+           TRC == AArch64::RegClass(AArch64::FPR32RegClassID) || TRC == AArch64::RegClass(AArch64::FPR16RegClassID) ||
+           TRC == AArch64::RegClass(AArch64::FPR8RegClassID);
   };
   return llvm::any_of(MI.operands(), IsFPR);
 }
@@ -4880,8 +4880,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                    MCRegister SrcReg, bool KillSrc,
                                    bool RenamableDest,
                                    bool RenamableSrc) const {
-  if (AArch64::GPR32spRegClass.contains(DestReg) &&
-      (AArch64::GPR32spRegClass.contains(SrcReg) || SrcReg == AArch64::WZR)) {
+  if (AArch64::RegClass(AArch64::GPR32spRegClassID)->contains(DestReg) &&
+      (AArch64::RegClass(AArch64::GPR32spRegClassID)->contains(SrcReg) || SrcReg == AArch64::WZR)) {
     const TargetRegisterInfo *TRI = &getRegisterInfo();
 
     if (DestReg == AArch64::WSP || SrcReg == AArch64::WSP) {
@@ -4889,9 +4889,9 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       if (Subtarget.hasZeroCycleRegMove()) {
         // Cyclone recognizes "ADD Xd, Xn, #0" as a zero-cycle register move.
         MCRegister DestRegX = TRI->getMatchingSuperReg(
-            DestReg, AArch64::sub_32, &AArch64::GPR64spRegClass);
+            DestReg, AArch64::sub_32, AArch64::RegClass(AArch64::GPR64spRegClassID));
         MCRegister SrcRegX = TRI->getMatchingSuperReg(
-            SrcReg, AArch64::sub_32, &AArch64::GPR64spRegClass);
+            SrcReg, AArch64::sub_32, AArch64::RegClass(AArch64::GPR64spRegClassID));
         // This instruction is reading and writing X registers.  This may upset
         // the register scavenger and machine verifier, so we need to indicate
         // that we are reading an undefined value from SrcRegX, but a proper
@@ -4915,9 +4915,9 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
       if (Subtarget.hasZeroCycleRegMove()) {
         // Cyclone recognizes "ORR Xd, XZR, Xm" as a zero-cycle register move.
         MCRegister DestRegX = TRI->getMatchingSuperReg(
-            DestReg, AArch64::sub_32, &AArch64::GPR64spRegClass);
+            DestReg, AArch64::sub_32, AArch64::RegClass(AArch64::GPR64spRegClassID));
         MCRegister SrcRegX = TRI->getMatchingSuperReg(
-            SrcReg, AArch64::sub_32, &AArch64::GPR64spRegClass);
+            SrcReg, AArch64::sub_32, AArch64::RegClass(AArch64::GPR64spRegClassID));
         // This instruction is reading and writing X registers.  This may upset
         // the register scavenger and machine verifier, so we need to indicate
         // that we are reading an undefined value from SrcRegX, but a proper
@@ -4937,8 +4937,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a Predicate register by ORRing with itself.
-  if (AArch64::PPRRegClass.contains(DestReg) &&
-      AArch64::PPRRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::PPRRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::PPRRegClassID)->contains(SrcReg)) {
     assert(Subtarget.isSVEorStreamingSVEAvailable() &&
            "Unexpected SVE register.");
     BuildMI(MBB, I, DL, get(AArch64::ORR_PPzPP), DestReg)
@@ -4950,8 +4950,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 
   // Copy a predicate-as-counter register by ORRing with itself as if it
   // were a regular predicate (mask) register.
-  bool DestIsPNR = AArch64::PNRRegClass.contains(DestReg);
-  bool SrcIsPNR = AArch64::PNRRegClass.contains(SrcReg);
+  bool DestIsPNR = AArch64::RegClass(AArch64::PNRRegClassID)->contains(DestReg);
+  bool SrcIsPNR = AArch64::RegClass(AArch64::PNRRegClassID)->contains(SrcReg);
   if (DestIsPNR || SrcIsPNR) {
     auto ToPPR = [](MCRegister R) -> MCRegister {
       return (R - AArch64::PN0) + AArch64::P0;
@@ -4971,8 +4971,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a Z register by ORRing with itself.
-  if (AArch64::ZPRRegClass.contains(DestReg) &&
-      AArch64::ZPRRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::ZPRRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::ZPRRegClassID)->contains(SrcReg)) {
     assert(Subtarget.isSVEorStreamingSVEAvailable() &&
            "Unexpected SVE register.");
     BuildMI(MBB, I, DL, get(AArch64::ORR_ZZZ), DestReg)
@@ -4982,10 +4982,10 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a Z register pair by copying the individual sub-registers.
-  if ((AArch64::ZPR2RegClass.contains(DestReg) ||
-       AArch64::ZPR2StridedOrContiguousRegClass.contains(DestReg)) &&
-      (AArch64::ZPR2RegClass.contains(SrcReg) ||
-       AArch64::ZPR2StridedOrContiguousRegClass.contains(SrcReg))) {
+  if ((AArch64::RegClass(AArch64::ZPR2RegClassID)->contains(DestReg) ||
+       AArch64::RegClass(AArch64::ZPR2StridedOrContiguousRegClassID)->contains(DestReg)) &&
+      (AArch64::RegClass(AArch64::ZPR2RegClassID)->contains(SrcReg) ||
+       AArch64::RegClass(AArch64::ZPR2StridedOrContiguousRegClassID)->contains(SrcReg))) {
     assert(Subtarget.isSVEorStreamingSVEAvailable() &&
            "Unexpected SVE register.");
     static const unsigned Indices[] = {AArch64::zsub0, AArch64::zsub1};
@@ -4995,8 +4995,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a Z register triple by copying the individual sub-registers.
-  if (AArch64::ZPR3RegClass.contains(DestReg) &&
-      AArch64::ZPR3RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::ZPR3RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::ZPR3RegClassID)->contains(SrcReg)) {
     assert(Subtarget.isSVEorStreamingSVEAvailable() &&
            "Unexpected SVE register.");
     static const unsigned Indices[] = {AArch64::zsub0, AArch64::zsub1,
@@ -5007,10 +5007,10 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a Z register quad by copying the individual sub-registers.
-  if ((AArch64::ZPR4RegClass.contains(DestReg) ||
-       AArch64::ZPR4StridedOrContiguousRegClass.contains(DestReg)) &&
-      (AArch64::ZPR4RegClass.contains(SrcReg) ||
-       AArch64::ZPR4StridedOrContiguousRegClass.contains(SrcReg))) {
+  if ((AArch64::RegClass(AArch64::ZPR4RegClassID)->contains(DestReg) ||
+       AArch64::RegClass(AArch64::ZPR4StridedOrContiguousRegClassID)->contains(DestReg)) &&
+      (AArch64::RegClass(AArch64::ZPR4RegClassID)->contains(SrcReg) ||
+       AArch64::RegClass(AArch64::ZPR4StridedOrContiguousRegClassID)->contains(SrcReg))) {
     assert(Subtarget.isSVEorStreamingSVEAvailable() &&
            "Unexpected SVE register.");
     static const unsigned Indices[] = {AArch64::zsub0, AArch64::zsub1,
@@ -5020,8 +5020,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     return;
   }
 
-  if (AArch64::GPR64spRegClass.contains(DestReg) &&
-      (AArch64::GPR64spRegClass.contains(SrcReg) || SrcReg == AArch64::XZR)) {
+  if (AArch64::RegClass(AArch64::GPR64spRegClassID)->contains(DestReg) &&
+      (AArch64::RegClass(AArch64::GPR64spRegClassID)->contains(SrcReg) || SrcReg == AArch64::XZR)) {
     if (DestReg == AArch64::SP || SrcReg == AArch64::SP) {
       // If either operand is SP, expand to ADD #0.
       BuildMI(MBB, I, DL, get(AArch64::ADDXri), DestReg)
@@ -5042,8 +5042,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a DDDD register quad by copying the individual sub-registers.
-  if (AArch64::DDDDRegClass.contains(DestReg) &&
-      AArch64::DDDDRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::DDDDRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::DDDDRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::dsub0, AArch64::dsub1,
                                        AArch64::dsub2, AArch64::dsub3};
     copyPhysRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRv8i8,
@@ -5052,8 +5052,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a DDD register triple by copying the individual sub-registers.
-  if (AArch64::DDDRegClass.contains(DestReg) &&
-      AArch64::DDDRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::DDDRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::DDDRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::dsub0, AArch64::dsub1,
                                        AArch64::dsub2};
     copyPhysRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRv8i8,
@@ -5062,8 +5062,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a DD register pair by copying the individual sub-registers.
-  if (AArch64::DDRegClass.contains(DestReg) &&
-      AArch64::DDRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::DDRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::DDRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::dsub0, AArch64::dsub1};
     copyPhysRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRv8i8,
                      Indices);
@@ -5071,8 +5071,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a QQQQ register quad by copying the individual sub-registers.
-  if (AArch64::QQQQRegClass.contains(DestReg) &&
-      AArch64::QQQQRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::QQQQRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::QQQQRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::qsub0, AArch64::qsub1,
                                        AArch64::qsub2, AArch64::qsub3};
     copyPhysRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRv16i8,
@@ -5081,8 +5081,8 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a QQQ register triple by copying the individual sub-registers.
-  if (AArch64::QQQRegClass.contains(DestReg) &&
-      AArch64::QQQRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::QQQRegClassID)->contains(DestReg) &&
+     AArch64::RegClass(AArch64::QQQRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::qsub0, AArch64::qsub1,
                                        AArch64::qsub2};
     copyPhysRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRv16i8,
@@ -5091,32 +5091,33 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   // Copy a QQ register pair by copying the individual sub-registers.
-  if (AArch64::QQRegClass.contains(DestReg) &&
-      AArch64::QQRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::QQRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::QQRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::qsub0, AArch64::qsub1};
     copyPhysRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRv16i8,
                      Indices);
     return;
   }
 
-  if (AArch64::XSeqPairsClassRegClass.contains(DestReg) &&
-      AArch64::XSeqPairsClassRegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::XSeqPairsClassRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::XSeqPairsClassRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::sube64, AArch64::subo64};
     copyGPRRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRXrs,
                     AArch64::XZR, Indices);
     return;
   }
 
-  if (AArch64::WSeqPairsClassRegClass.contains(DestReg) &&
-      AArch64::WSeqPairsClassRegClass.contains(SrcReg)) {
+
+  if (AArch64::RegClass(AArch64::WSeqPairsClassRegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::WSeqPairsClassRegClassID)->contains(SrcReg)) {
     static const unsigned Indices[] = {AArch64::sube32, AArch64::subo32};
     copyGPRRegTuple(MBB, I, DL, DestReg, SrcReg, KillSrc, AArch64::ORRWrs,
                     AArch64::WZR, Indices);
     return;
   }
 
-  if (AArch64::FPR128RegClass.contains(DestReg) &&
-      AArch64::FPR128RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::FPR128RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::FPR128RegClassID)->contains(SrcReg)) {
     if (Subtarget.isSVEorStreamingSVEAvailable() &&
         !Subtarget.isNeonAvailable())
       BuildMI(MBB, I, DL, get(AArch64::ORR_ZZZ))
@@ -5142,71 +5143,71 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     return;
   }
 
-  if (AArch64::FPR64RegClass.contains(DestReg) &&
-      AArch64::FPR64RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::FPR64RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::FPR64RegClassID)->contains(SrcReg)) {
     BuildMI(MBB, I, DL, get(AArch64::FMOVDr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
 
-  if (AArch64::FPR32RegClass.contains(DestReg) &&
-      AArch64::FPR32RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::FPR16RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::FPR16RegClassID)->contains(SrcReg)) {
     BuildMI(MBB, I, DL, get(AArch64::FMOVSr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
 
-  if (AArch64::FPR16RegClass.contains(DestReg) &&
-      AArch64::FPR16RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::FPR16RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::FPR16RegClassID)->contains(SrcReg)) {
     DestReg =
-        RI.getMatchingSuperReg(DestReg, AArch64::hsub, &AArch64::FPR32RegClass);
+        RI.getMatchingSuperReg(DestReg, AArch64::hsub, AArch64::RegClass(AArch64::FPR32RegClassID));
     SrcReg =
-        RI.getMatchingSuperReg(SrcReg, AArch64::hsub, &AArch64::FPR32RegClass);
+        RI.getMatchingSuperReg(SrcReg, AArch64::hsub, AArch64::RegClass(AArch64::FPR32RegClassID));
     BuildMI(MBB, I, DL, get(AArch64::FMOVSr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
 
-  if (AArch64::FPR8RegClass.contains(DestReg) &&
-      AArch64::FPR8RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::FPR8RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::FPR8RegClassID)->contains(SrcReg)) {
     DestReg =
-        RI.getMatchingSuperReg(DestReg, AArch64::bsub, &AArch64::FPR32RegClass);
+        RI.getMatchingSuperReg(DestReg, AArch64::bsub, AArch64::RegClass(AArch64::FPR32RegClassID));
     SrcReg =
-        RI.getMatchingSuperReg(SrcReg, AArch64::bsub, &AArch64::FPR32RegClass);
+        RI.getMatchingSuperReg(SrcReg, AArch64::bsub, AArch64::RegClass(AArch64::FPR32RegClassID));
     BuildMI(MBB, I, DL, get(AArch64::FMOVSr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
 
   // Copies between GPR64 and FPR64.
-  if (AArch64::FPR64RegClass.contains(DestReg) &&
-      AArch64::GPR64RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::FPR64RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::GPR64RegClassID)->contains(SrcReg)) {
     BuildMI(MBB, I, DL, get(AArch64::FMOVXDr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
-  if (AArch64::GPR64RegClass.contains(DestReg) &&
-      AArch64::FPR64RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::FPR64RegClassID)->contains(SrcReg)) {
     BuildMI(MBB, I, DL, get(AArch64::FMOVDXr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
   // Copies between GPR32 and FPR32.
-  if (AArch64::FPR32RegClass.contains(DestReg) &&
-      AArch64::GPR32RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::FPR32RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::GPR32RegClassID)->contains(SrcReg)) {
     BuildMI(MBB, I, DL, get(AArch64::FMOVWSr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
-  if (AArch64::GPR32RegClass.contains(DestReg) &&
-      AArch64::FPR32RegClass.contains(SrcReg)) {
+  if (AArch64::RegClass(AArch64::GPR32RegClassID)->contains(DestReg) &&
+      AArch64::RegClass(AArch64::FPR32RegClassID)->contains(SrcReg)) {
     BuildMI(MBB, I, DL, get(AArch64::FMOVSWr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
     return;
   }
 
   if (DestReg == AArch64::NZCV) {
-    assert(AArch64::GPR64RegClass.contains(SrcReg) && "Invalid NZCV copy");
+    assert(AArch64::RegClass(AArch64::GPR64RegClassID)->contains(SrcReg) && "Invalid NZCV copy");
     BuildMI(MBB, I, DL, get(AArch64::MSR))
         .addImm(AArch64SysReg::NZCV)
         .addReg(SrcReg, getKillRegState(KillSrc))
@@ -5215,7 +5216,7 @@ void AArch64InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
   }
 
   if (SrcReg == AArch64::NZCV) {
-    assert(AArch64::GPR64RegClass.contains(DestReg) && "Invalid NZCV copy");
+    assert(AArch64::RegClass(AArch64::GPR64RegClassID)->contains(DestReg) && "Invalid NZCV copy");
     BuildMI(MBB, I, DL, get(AArch64::MRS), DestReg)
         .addImm(AArch64SysReg::NZCV)
         .addReg(AArch64::NZCV, RegState::Implicit | getKillRegState(KillSrc));
@@ -5272,14 +5273,14 @@ void AArch64InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
   unsigned StackID = TargetStackID::Default;
   switch (TRI->getSpillSize(*RC)) {
   case 1:
-    if (AArch64::FPR8RegClass.hasSubClassEq(RC))
+    if (AArch64::RegClass(AArch64::FPR8RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::STRBui;
     break;
   case 2: {
-    if (AArch64::FPR16RegClass.hasSubClassEq(RC))
+    if (AArch64::RegClass(AArch64::FPR16RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::STRHui;
-    else if (AArch64::PNRRegClass.hasSubClassEq(RC) ||
-             AArch64::PPRRegClass.hasSubClassEq(RC)) {
+    else if (AArch64::RegClass(AArch64::PNRRegClassID)->hasSubClassEq(RC) ||
+             AArch64::RegClass(AArch64::PPRRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register store without SVE store instructions");
       Opc = AArch64::STR_PXI;
@@ -5288,29 +5289,29 @@ void AArch64InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
     break;
   }
   case 4:
-    if (AArch64::GPR32allRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::GPR32allRegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::STRWui;
       if (SrcReg.isVirtual())
-        MF.getRegInfo().constrainRegClass(SrcReg, &AArch64::GPR32RegClass);
+        MF.getRegInfo().constrainRegClass(SrcReg, AArch64::RegClass(AArch64::GPR32RegClassID));
       else
         assert(SrcReg != AArch64::WSP);
-    } else if (AArch64::FPR32RegClass.hasSubClassEq(RC))
+    } else if (AArch64::RegClass(AArch64::FPR32RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::STRSui;
-    else if (AArch64::PPR2RegClass.hasSubClassEq(RC)) {
+    else if (AArch64::RegClass(AArch64::PPR2RegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::STR_PPXI;
       StackID = TargetStackID::ScalableVector;
     }
     break;
   case 8:
-    if (AArch64::GPR64allRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::GPR64allRegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::STRXui;
       if (SrcReg.isVirtual())
-        MF.getRegInfo().constrainRegClass(SrcReg, &AArch64::GPR64RegClass);
+        MF.getRegInfo().constrainRegClass(SrcReg, AArch64::RegClass(AArch64::GPR64RegClassID));
       else
         assert(SrcReg != AArch64::SP);
-    } else if (AArch64::FPR64RegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::FPR64RegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::STRDui;
-    } else if (AArch64::WSeqPairsClassRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::WSeqPairsClassRegClassID)->hasSubClassEq(RC)) {
       storeRegPairToStackSlot(getRegisterInfo(), MBB, MBBI,
                               get(AArch64::STPWi), SrcReg, isKill,
                               AArch64::sube32, AArch64::subo32, FI, MMO);
@@ -5318,18 +5319,18 @@ void AArch64InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 16:
-    if (AArch64::FPR128RegClass.hasSubClassEq(RC))
+    if (AArch64::RegClass(AArch64::FPR128RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::STRQui;
-    else if (AArch64::DDRegClass.hasSubClassEq(RC)) {
+    else if (AArch64::RegClass(AArch64::DDRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register store without NEON");
       Opc = AArch64::ST1Twov1d;
       Offset = false;
-    } else if (AArch64::XSeqPairsClassRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::XSeqPairsClassRegClassID)->hasSubClassEq(RC)) {
       storeRegPairToStackSlot(getRegisterInfo(), MBB, MBBI,
                               get(AArch64::STPXi), SrcReg, isKill,
                               AArch64::sube64, AArch64::subo64, FI, MMO);
       return;
-    } else if (AArch64::ZPRRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPRRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register store without SVE store instructions");
       Opc = AArch64::STR_ZXI;
@@ -5337,23 +5338,23 @@ void AArch64InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 24:
-    if (AArch64::DDDRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::DDDRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register store without NEON");
       Opc = AArch64::ST1Threev1d;
       Offset = false;
     }
     break;
   case 32:
-    if (AArch64::DDDDRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::DDDDRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register store without NEON");
       Opc = AArch64::ST1Fourv1d;
       Offset = false;
-    } else if (AArch64::QQRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::QQRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register store without NEON");
       Opc = AArch64::ST1Twov2d;
       Offset = false;
-    } else if (AArch64::ZPR2RegClass.hasSubClassEq(RC) ||
-               AArch64::ZPR2StridedOrContiguousRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPR2RegClassID)->hasSubClassEq(RC) ||
+               AArch64::RegClass(AArch64::ZPR2StridedOrContiguousRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register store without SVE store instructions");
       Opc = AArch64::STR_ZZXI;
@@ -5361,11 +5362,11 @@ void AArch64InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 48:
-    if (AArch64::QQQRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::QQQRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register store without NEON");
       Opc = AArch64::ST1Threev2d;
       Offset = false;
-    } else if (AArch64::ZPR3RegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPR3RegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register store without SVE store instructions");
       Opc = AArch64::STR_ZZZXI;
@@ -5373,12 +5374,12 @@ void AArch64InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 64:
-    if (AArch64::QQQQRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::QQQQRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register store without NEON");
       Opc = AArch64::ST1Fourv2d;
       Offset = false;
-    } else if (AArch64::ZPR4RegClass.hasSubClassEq(RC) ||
-               AArch64::ZPR4StridedOrContiguousRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPR4RegClassID)->hasSubClassEq(RC) ||
+               AArch64::RegClass(AArch64::ZPR4StridedOrContiguousRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register store without SVE store instructions");
       Opc = AArch64::STR_ZZZZXI;
@@ -5444,14 +5445,14 @@ void AArch64InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
   Register PNRReg = MCRegister::NoRegister;
   switch (TRI->getSpillSize(*RC)) {
   case 1:
-    if (AArch64::FPR8RegClass.hasSubClassEq(RC))
+    if (AArch64::RegClass(AArch64::FPR8RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::LDRBui;
     break;
   case 2: {
-    bool IsPNR = AArch64::PNRRegClass.hasSubClassEq(RC);
-    if (AArch64::FPR16RegClass.hasSubClassEq(RC))
+    bool IsPNR = AArch64::RegClass(AArch64::PNRRegClassID)->hasSubClassEq(RC);
+    if (AArch64::RegClass(AArch64::FPR16RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::LDRHui;
-    else if (IsPNR || AArch64::PPRRegClass.hasSubClassEq(RC)) {
+    else if (IsPNR || AArch64::RegClass(AArch64::PPRRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register load without SVE load instructions");
       if (IsPNR)
@@ -5462,29 +5463,29 @@ void AArch64InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
     break;
   }
   case 4:
-    if (AArch64::GPR32allRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::GPR32allRegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::LDRWui;
       if (DestReg.isVirtual())
-        MF.getRegInfo().constrainRegClass(DestReg, &AArch64::GPR32RegClass);
+        MF.getRegInfo().constrainRegClass(DestReg, AArch64::RegClass(AArch64::GPR32RegClassID));
       else
         assert(DestReg != AArch64::WSP);
-    } else if (AArch64::FPR32RegClass.hasSubClassEq(RC))
+    } else if (AArch64::RegClass(AArch64::FPR32RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::LDRSui;
-    else if (AArch64::PPR2RegClass.hasSubClassEq(RC)) {
+    else if (AArch64::RegClass(AArch64::PPR2RegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::LDR_PPXI;
       StackID = TargetStackID::ScalableVector;
     }
     break;
   case 8:
-    if (AArch64::GPR64allRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::GPR64allRegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::LDRXui;
       if (DestReg.isVirtual())
-        MF.getRegInfo().constrainRegClass(DestReg, &AArch64::GPR64RegClass);
+        MF.getRegInfo().constrainRegClass(DestReg, AArch64::RegClass(AArch64::GPR64RegClassID));
       else
         assert(DestReg != AArch64::SP);
-    } else if (AArch64::FPR64RegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::FPR64RegClassID)->hasSubClassEq(RC)) {
       Opc = AArch64::LDRDui;
-    } else if (AArch64::WSeqPairsClassRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::WSeqPairsClassRegClassID)->hasSubClassEq(RC)) {
       loadRegPairFromStackSlot(getRegisterInfo(), MBB, MBBI,
                                get(AArch64::LDPWi), DestReg, AArch64::sube32,
                                AArch64::subo32, FI, MMO);
@@ -5492,18 +5493,18 @@ void AArch64InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 16:
-    if (AArch64::FPR128RegClass.hasSubClassEq(RC))
+    if (AArch64::RegClass(AArch64::FPR128RegClassID)->hasSubClassEq(RC))
       Opc = AArch64::LDRQui;
-    else if (AArch64::DDRegClass.hasSubClassEq(RC)) {
+    else if (AArch64::RegClass(AArch64::DDRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register load without NEON");
       Opc = AArch64::LD1Twov1d;
       Offset = false;
-    } else if (AArch64::XSeqPairsClassRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::XSeqPairsClassRegClassID)->hasSubClassEq(RC)) {
       loadRegPairFromStackSlot(getRegisterInfo(), MBB, MBBI,
                                get(AArch64::LDPXi), DestReg, AArch64::sube64,
                                AArch64::subo64, FI, MMO);
       return;
-    } else if (AArch64::ZPRRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPRRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register load without SVE load instructions");
       Opc = AArch64::LDR_ZXI;
@@ -5511,23 +5512,23 @@ void AArch64InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 24:
-    if (AArch64::DDDRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::DDDRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register load without NEON");
       Opc = AArch64::LD1Threev1d;
       Offset = false;
     }
     break;
   case 32:
-    if (AArch64::DDDDRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::DDDDRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register load without NEON");
       Opc = AArch64::LD1Fourv1d;
       Offset = false;
-    } else if (AArch64::QQRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::QQRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register load without NEON");
       Opc = AArch64::LD1Twov2d;
       Offset = false;
-    } else if (AArch64::ZPR2RegClass.hasSubClassEq(RC) ||
-               AArch64::ZPR2StridedOrContiguousRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPR2RegClassID)->hasSubClassEq(RC) ||
+               AArch64::RegClass(AArch64::ZPR2StridedOrContiguousRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register load without SVE load instructions");
       Opc = AArch64::LDR_ZZXI;
@@ -5535,11 +5536,11 @@ void AArch64InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 48:
-    if (AArch64::QQQRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::QQQRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register load without NEON");
       Opc = AArch64::LD1Threev2d;
       Offset = false;
-    } else if (AArch64::ZPR3RegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPR3RegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register load without SVE load instructions");
       Opc = AArch64::LDR_ZZZXI;
@@ -5547,12 +5548,12 @@ void AArch64InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
     }
     break;
   case 64:
-    if (AArch64::QQQQRegClass.hasSubClassEq(RC)) {
+    if (AArch64::RegClass(AArch64::QQQQRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.hasNEON() && "Unexpected register load without NEON");
       Opc = AArch64::LD1Fourv2d;
       Offset = false;
-    } else if (AArch64::ZPR4RegClass.hasSubClassEq(RC) ||
-               AArch64::ZPR4StridedOrContiguousRegClass.hasSubClassEq(RC)) {
+    } else if (AArch64::RegClass(AArch64::ZPR4RegClassID)->hasSubClassEq(RC) ||
+               AArch64::RegClass(AArch64::ZPR4StridedOrContiguousRegClassID)->hasSubClassEq(RC)) {
       assert(Subtarget.isSVEorStreamingSVEAvailable() &&
              "Unexpected register load without SVE load instructions");
       Opc = AArch64::LDR_ZZZZXI;
@@ -5799,7 +5800,7 @@ static void emitFrameOffsetAdj(MachineBasicBlock &MBB,
   Register TmpReg = DestReg;
   if (TmpReg == AArch64::XZR)
     TmpReg = MBB.getParent()->getRegInfo().createVirtualRegister(
-        &AArch64::GPR64RegClass);
+        AArch64::RegClass(AArch64::GPR64RegClassID));
   do {
     uint64_t ThisVal = std::min<uint64_t>(Offset, MaxEncodableValue);
     unsigned LocalShiftSize = 0;
@@ -5950,11 +5951,11 @@ MachineInstr *AArch64InstrInfo::foldMemoryOperandImpl(
     Register DstReg = MI.getOperand(0).getReg();
     Register SrcReg = MI.getOperand(1).getReg();
     if (SrcReg == AArch64::SP && DstReg.isVirtual()) {
-      MF.getRegInfo().constrainRegClass(DstReg, &AArch64::GPR64RegClass);
+      MF.getRegInfo().constrainRegClass(DstReg, AArch64::RegClass(AArch64::GPR64RegClassID));
       return nullptr;
     }
     if (DstReg == AArch64::SP && SrcReg.isVirtual()) {
-      MF.getRegInfo().constrainRegClass(SrcReg, &AArch64::GPR64RegClass);
+      MF.getRegInfo().constrainRegClass(SrcReg, AArch64::RegClass(AArch64::GPR64RegClassID));
       return nullptr;
     }
     // Nothing can folded with copy from/to NZCV.
@@ -6032,7 +6033,7 @@ MachineInstr *AArch64InstrInfo::foldMemoryOperandImpl(
       assert(SrcMO.getSubReg() == 0 &&
              "Unexpected subreg on physical register");
       storeRegToStackSlot(MBB, InsertPt, AArch64::XZR, SrcMO.isKill(),
-                          FrameIndex, &AArch64::GPR64RegClass, &TRI,
+                          FrameIndex, AArch64::RegClass(AArch64::GPR64RegClassID), &TRI,
                           Register());
       return &*--InsertPt;
     }
@@ -6053,13 +6054,13 @@ MachineInstr *AArch64InstrInfo::foldMemoryOperandImpl(
         FillRC = nullptr;
         break;
       case AArch64::sub_32:
-        FillRC = &AArch64::GPR32RegClass;
+        FillRC = AArch64::RegClass(AArch64::GPR32RegClassID);
         break;
       case AArch64::ssub:
-        FillRC = &AArch64::FPR32RegClass;
+        FillRC = AArch64::RegClass(AArch64::FPR32RegClassID);
         break;
       case AArch64::dsub:
-        FillRC = &AArch64::FPR64RegClass;
+        FillRC = AArch64::RegClass(AArch64::FPR64RegClassID);
         break;
       }
 
@@ -7150,9 +7151,9 @@ genFNegatedMAD(MachineFunction &MF, MachineRegisterInfo &MRI,
 
   unsigned Opc = 0;
   const TargetRegisterClass *RC = MRI.getRegClass(MAD->getOperand(0).getReg());
-  if (AArch64::FPR32RegClass.hasSubClassEq(RC))
+  if (AArch64::RegClass(AArch64::FPR32RegClassID)->hasSubClassEq(RC))
     Opc = AArch64::FNMADDSrrr;
-  else if (AArch64::FPR64RegClass.hasSubClassEq(RC))
+  else if (AArch64::RegClass(AArch64::FPR64RegClassID)->hasSubClassEq(RC))
     Opc = AArch64::FNMADDDrrr;
   else
     return nullptr;
@@ -7445,10 +7446,10 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     // --- Create(MADD);
     if (Pattern == AArch64MachineCombinerPattern::MULADDW_OP1) {
       Opc = AArch64::MADDWrrr;
-      RC = &AArch64::GPR32RegClass;
+      RC = AArch64::RegClass(AArch64::GPR32RegClassID);
     } else {
       Opc = AArch64::MADDXrrr;
-      RC = &AArch64::GPR64RegClass;
+      RC = AArch64::RegClass(AArch64::GPR64RegClassID);
     }
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
@@ -7460,10 +7461,10 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     // --- Create(MADD);
     if (Pattern == AArch64MachineCombinerPattern::MULADDW_OP2) {
       Opc = AArch64::MADDWrrr;
-      RC = &AArch64::GPR32RegClass;
+      RC = AArch64::RegClass(AArch64::GPR32RegClassID);
     } else {
       Opc = AArch64::MADDXrrr;
-      RC = &AArch64::GPR64RegClass;
+      RC = AArch64::RegClass(AArch64::GPR64RegClassID);
     }
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
@@ -7478,18 +7479,18 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     unsigned BitSize, OrrOpc, ZeroReg;
     if (Pattern == AArch64MachineCombinerPattern::MULADDWI_OP1) {
       OrrOpc = AArch64::ORRWri;
-      OrrRC = &AArch64::GPR32spRegClass;
+      OrrRC = AArch64::RegClass(AArch64::GPR32spRegClassID);
       BitSize = 32;
       ZeroReg = AArch64::WZR;
       Opc = AArch64::MADDWrrr;
-      RC = &AArch64::GPR32RegClass;
+      RC = AArch64::RegClass(AArch64::GPR32RegClassID);
     } else {
       OrrOpc = AArch64::ORRXri;
-      OrrRC = &AArch64::GPR64spRegClass;
+      OrrRC = AArch64::RegClass(AArch64::GPR64spRegClassID);
       BitSize = 64;
       ZeroReg = AArch64::XZR;
       Opc = AArch64::MADDXrrr;
-      RC = &AArch64::GPR64RegClass;
+      RC = AArch64::RegClass(AArch64::GPR64RegClassID);
     }
     Register NewVR = MRI.createVirtualRegister(OrrRC);
     uint64_t Imm = Root.getOperand(2).getImm();
@@ -7540,16 +7541,16 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     unsigned SubOpc, ZeroReg;
     if (Pattern == AArch64MachineCombinerPattern::MULSUBW_OP1) {
       SubOpc = AArch64::SUBWrr;
-      SubRC = &AArch64::GPR32spRegClass;
+      SubRC = AArch64::RegClass(AArch64::GPR32spRegClassID);
       ZeroReg = AArch64::WZR;
       Opc = AArch64::MADDWrrr;
-      RC = &AArch64::GPR32RegClass;
+      RC = AArch64::RegClass(AArch64::GPR32RegClassID);
     } else {
       SubOpc = AArch64::SUBXrr;
-      SubRC = &AArch64::GPR64spRegClass;
+      SubRC = AArch64::RegClass(AArch64::GPR64spRegClassID);
       ZeroReg = AArch64::XZR;
       Opc = AArch64::MADDXrrr;
-      RC = &AArch64::GPR64RegClass;
+      RC = AArch64::RegClass(AArch64::GPR64RegClassID);
     }
     Register NewVR = MRI.createVirtualRegister(SubRC);
     // SUB NewVR, 0, C
@@ -7570,10 +7571,10 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     // --- Create(MSUB);
     if (Pattern == AArch64MachineCombinerPattern::MULSUBW_OP2) {
       Opc = AArch64::MSUBWrrr;
-      RC = &AArch64::GPR32RegClass;
+      RC = AArch64::RegClass(AArch64::GPR32RegClassID);
     } else {
       Opc = AArch64::MSUBXrrr;
-      RC = &AArch64::GPR64RegClass;
+      RC = AArch64::RegClass(AArch64::GPR64RegClassID);
     }
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
@@ -7588,18 +7589,18 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     unsigned BitSize, OrrOpc, ZeroReg;
     if (Pattern == AArch64MachineCombinerPattern::MULSUBWI_OP1) {
       OrrOpc = AArch64::ORRWri;
-      OrrRC = &AArch64::GPR32spRegClass;
+      OrrRC = AArch64::RegClass(AArch64::GPR32spRegClassID);
       BitSize = 32;
       ZeroReg = AArch64::WZR;
       Opc = AArch64::MADDWrrr;
-      RC = &AArch64::GPR32RegClass;
+      RC = AArch64::RegClass(AArch64::GPR32RegClassID);
     } else {
       OrrOpc = AArch64::ORRXri;
-      OrrRC = &AArch64::GPR64spRegClass;
+      OrrRC = AArch64::RegClass(AArch64::GPR64spRegClassID);
       BitSize = 64;
       ZeroReg = AArch64::XZR;
       Opc = AArch64::MADDXrrr;
-      RC = &AArch64::GPR64RegClass;
+      RC = AArch64::RegClass(AArch64::GPR64RegClassID);
     }
     Register NewVR = MRI.createVirtualRegister(OrrRC);
     uint64_t Imm = Root.getOperand(2).getImm();
@@ -7641,307 +7642,307 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::MULADDv8i8_OP1:
     Opc = AArch64::MLAv8i8;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv8i8_OP2:
     Opc = AArch64::MLAv8i8;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv16i8_OP1:
     Opc = AArch64::MLAv16i8;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv16i8_OP2:
     Opc = AArch64::MLAv16i8;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv4i16_OP1:
     Opc = AArch64::MLAv4i16;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv4i16_OP2:
     Opc = AArch64::MLAv4i16;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv8i16_OP1:
     Opc = AArch64::MLAv8i16;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv8i16_OP2:
     Opc = AArch64::MLAv8i16;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv2i32_OP1:
     Opc = AArch64::MLAv2i32;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv2i32_OP2:
     Opc = AArch64::MLAv2i32;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv4i32_OP1:
     Opc = AArch64::MLAv4i32;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv4i32_OP2:
     Opc = AArch64::MLAv4i32;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::MULSUBv8i8_OP1:
     Opc = AArch64::MLAv8i8;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAccNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv8i8,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv8i8_OP2:
     Opc = AArch64::MLSv8i8;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv16i8_OP1:
     Opc = AArch64::MLAv16i8;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAccNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv16i8,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv16i8_OP2:
     Opc = AArch64::MLSv16i8;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv4i16_OP1:
     Opc = AArch64::MLAv4i16;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAccNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv4i16,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv4i16_OP2:
     Opc = AArch64::MLSv4i16;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv8i16_OP1:
     Opc = AArch64::MLAv8i16;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAccNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv8i16,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv8i16_OP2:
     Opc = AArch64::MLSv8i16;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv2i32_OP1:
     Opc = AArch64::MLAv2i32;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAccNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv2i32,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv2i32_OP2:
     Opc = AArch64::MLSv2i32;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv4i32_OP1:
     Opc = AArch64::MLAv4i32;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAccNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv4i32,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv4i32_OP2:
     Opc = AArch64::MLSv4i32;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyAcc(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::MULADDv4i16_indexed_OP1:
     Opc = AArch64::MLAv4i16_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv4i16_indexed_OP2:
     Opc = AArch64::MLAv4i16_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv8i16_indexed_OP1:
     Opc = AArch64::MLAv8i16_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv8i16_indexed_OP2:
     Opc = AArch64::MLAv8i16_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv2i32_indexed_OP1:
     Opc = AArch64::MLAv2i32_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv2i32_indexed_OP2:
     Opc = AArch64::MLAv2i32_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv4i32_indexed_OP1:
     Opc = AArch64::MLAv4i32_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULADDv4i32_indexed_OP2:
     Opc = AArch64::MLAv4i32_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::MULSUBv4i16_indexed_OP1:
     Opc = AArch64::MLAv4i16_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdxNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv4i16,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv4i16_indexed_OP2:
     Opc = AArch64::MLSv4i16_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv8i16_indexed_OP1:
     Opc = AArch64::MLAv8i16_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdxNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv8i16,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv8i16_indexed_OP2:
     Opc = AArch64::MLSv8i16_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv2i32_indexed_OP1:
     Opc = AArch64::MLAv2i32_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdxNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv2i32,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv2i32_indexed_OP2:
     Opc = AArch64::MLSv2i32_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv4i32_indexed_OP1:
     Opc = AArch64::MLAv4i32_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdxNeg(MF, MRI, TII, Root, InsInstrs,
                                  InstrIdxForVirtReg, 1, Opc, AArch64::NEGv4i32,
                                  RC);
     break;
   case AArch64MachineCombinerPattern::MULSUBv4i32_indexed_OP2:
     Opc = AArch64::MLSv4i32_indexed;
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     MUL = genFusedMultiplyIdx(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
 
   // Floating Point Support
   case AArch64MachineCombinerPattern::FMULADDH_OP1:
     Opc = AArch64::FMADDHrrr;
-    RC = &AArch64::FPR16RegClass;
+    RC = AArch64::RegClass(AArch64::FPR16RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULADDS_OP1:
     Opc = AArch64::FMADDSrrr;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULADDD_OP1:
     Opc = AArch64::FMADDDrrr;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::FMULADDH_OP2:
     Opc = AArch64::FMADDHrrr;
-    RC = &AArch64::FPR16RegClass;
+    RC = AArch64::RegClass(AArch64::FPR16RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULADDS_OP2:
     Opc = AArch64::FMADDSrrr;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULADDD_OP2:
     Opc = AArch64::FMADDDrrr;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::FMLAv1i32_indexed_OP1:
     Opc = AArch64::FMLAv1i32_indexed;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
                            FMAInstKind::Indexed);
     break;
   case AArch64MachineCombinerPattern::FMLAv1i32_indexed_OP2:
     Opc = AArch64::FMLAv1i32_indexed;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
     break;
 
   case AArch64MachineCombinerPattern::FMLAv1i64_indexed_OP1:
     Opc = AArch64::FMLAv1i64_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
                            FMAInstKind::Indexed);
     break;
   case AArch64MachineCombinerPattern::FMLAv1i64_indexed_OP2:
     Opc = AArch64::FMLAv1i64_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
     break;
 
   case AArch64MachineCombinerPattern::FMLAv4i16_indexed_OP1:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Opc = AArch64::FMLAv4i16_indexed;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
                            FMAInstKind::Indexed);
     break;
   case AArch64MachineCombinerPattern::FMLAv4f16_OP1:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Opc = AArch64::FMLAv4f16;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
                            FMAInstKind::Accumulator);
     break;
   case AArch64MachineCombinerPattern::FMLAv4i16_indexed_OP2:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Opc = AArch64::FMLAv4i16_indexed;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
     break;
   case AArch64MachineCombinerPattern::FMLAv4f16_OP2:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Opc = AArch64::FMLAv4f16;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Accumulator);
@@ -7949,7 +7950,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLAv2i32_indexed_OP1:
   case AArch64MachineCombinerPattern::FMLAv2f32_OP1:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLAv2i32_indexed_OP1) {
       Opc = AArch64::FMLAv2i32_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
@@ -7962,7 +7963,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     break;
   case AArch64MachineCombinerPattern::FMLAv2i32_indexed_OP2:
   case AArch64MachineCombinerPattern::FMLAv2f32_OP2:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLAv2i32_indexed_OP2) {
       Opc = AArch64::FMLAv2i32_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
@@ -7975,25 +7976,25 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     break;
 
   case AArch64MachineCombinerPattern::FMLAv8i16_indexed_OP1:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Opc = AArch64::FMLAv8i16_indexed;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
                            FMAInstKind::Indexed);
     break;
   case AArch64MachineCombinerPattern::FMLAv8f16_OP1:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Opc = AArch64::FMLAv8f16;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
                            FMAInstKind::Accumulator);
     break;
   case AArch64MachineCombinerPattern::FMLAv8i16_indexed_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Opc = AArch64::FMLAv8i16_indexed;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
     break;
   case AArch64MachineCombinerPattern::FMLAv8f16_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Opc = AArch64::FMLAv8f16;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Accumulator);
@@ -8001,7 +8002,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLAv2i64_indexed_OP1:
   case AArch64MachineCombinerPattern::FMLAv2f64_OP1:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLAv2i64_indexed_OP1) {
       Opc = AArch64::FMLAv2i64_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
@@ -8014,7 +8015,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     break;
   case AArch64MachineCombinerPattern::FMLAv2i64_indexed_OP2:
   case AArch64MachineCombinerPattern::FMLAv2f64_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLAv2i64_indexed_OP2) {
       Opc = AArch64::FMLAv2i64_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
@@ -8028,7 +8029,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLAv4i32_indexed_OP1:
   case AArch64MachineCombinerPattern::FMLAv4f32_OP1:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLAv4i32_indexed_OP1) {
       Opc = AArch64::FMLAv4i32_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC,
@@ -8042,7 +8043,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLAv4i32_indexed_OP2:
   case AArch64MachineCombinerPattern::FMLAv4f32_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLAv4i32_indexed_OP2) {
       Opc = AArch64::FMLAv4i32_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
@@ -8056,69 +8057,69 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMULSUBH_OP1:
     Opc = AArch64::FNMSUBHrrr;
-    RC = &AArch64::FPR16RegClass;
+    RC = AArch64::RegClass(AArch64::FPR16RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULSUBS_OP1:
     Opc = AArch64::FNMSUBSrrr;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULSUBD_OP1:
     Opc = AArch64::FNMSUBDrrr;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::FNMULSUBH_OP1:
     Opc = AArch64::FNMADDHrrr;
-    RC = &AArch64::FPR16RegClass;
+    RC = AArch64::RegClass(AArch64::FPR16RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FNMULSUBS_OP1:
     Opc = AArch64::FNMADDSrrr;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FNMULSUBD_OP1:
     Opc = AArch64::FNMADDDrrr;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 1, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::FMULSUBH_OP2:
     Opc = AArch64::FMSUBHrrr;
-    RC = &AArch64::FPR16RegClass;
+    RC = AArch64::RegClass(AArch64::FPR16RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULSUBS_OP2:
     Opc = AArch64::FMSUBSrrr;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
   case AArch64MachineCombinerPattern::FMULSUBD_OP2:
     Opc = AArch64::FMSUBDrrr;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC);
     break;
 
   case AArch64MachineCombinerPattern::FMLSv1i32_indexed_OP2:
     Opc = AArch64::FMLSv1i32_indexed;
-    RC = &AArch64::FPR32RegClass;
+    RC = AArch64::RegClass(AArch64::FPR32RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
     break;
 
   case AArch64MachineCombinerPattern::FMLSv1i64_indexed_OP2:
     Opc = AArch64::FMLSv1i64_indexed;
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
     break;
 
   case AArch64MachineCombinerPattern::FMLSv4f16_OP1:
   case AArch64MachineCombinerPattern::FMLSv4i16_indexed_OP1: {
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Register NewVR = MRI.createVirtualRegister(RC);
     MachineInstrBuilder MIB1 =
         BuildMI(MF, MIMetadata(Root), TII->get(AArch64::FNEGv4f16), NewVR)
@@ -8137,13 +8138,13 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     break;
   }
   case AArch64MachineCombinerPattern::FMLSv4f16_OP2:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Opc = AArch64::FMLSv4f16;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Accumulator);
     break;
   case AArch64MachineCombinerPattern::FMLSv4i16_indexed_OP2:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Opc = AArch64::FMLSv4i16_indexed;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
@@ -8151,7 +8152,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLSv2f32_OP2:
   case AArch64MachineCombinerPattern::FMLSv2i32_indexed_OP2:
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLSv2i32_indexed_OP2) {
       Opc = AArch64::FMLSv2i32_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
@@ -8165,7 +8166,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLSv8f16_OP1:
   case AArch64MachineCombinerPattern::FMLSv8i16_indexed_OP1: {
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Register NewVR = MRI.createVirtualRegister(RC);
     MachineInstrBuilder MIB1 =
         BuildMI(MF, MIMetadata(Root), TII->get(AArch64::FNEGv8f16), NewVR)
@@ -8184,13 +8185,13 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     break;
   }
   case AArch64MachineCombinerPattern::FMLSv8f16_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Opc = AArch64::FMLSv8f16;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Accumulator);
     break;
   case AArch64MachineCombinerPattern::FMLSv8i16_indexed_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Opc = AArch64::FMLSv8i16_indexed;
     MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
                            FMAInstKind::Indexed);
@@ -8198,7 +8199,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLSv2f64_OP2:
   case AArch64MachineCombinerPattern::FMLSv2i64_indexed_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLSv2i64_indexed_OP2) {
       Opc = AArch64::FMLSv2i64_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
@@ -8212,7 +8213,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
 
   case AArch64MachineCombinerPattern::FMLSv4f32_OP2:
   case AArch64MachineCombinerPattern::FMLSv4i32_indexed_OP2:
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     if (Pattern == AArch64MachineCombinerPattern::FMLSv4i32_indexed_OP2) {
       Opc = AArch64::FMLSv4i32_indexed;
       MUL = genFusedMultiply(MF, MRI, TII, Root, InsInstrs, 2, Opc, RC,
@@ -8225,7 +8226,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
     break;
   case AArch64MachineCombinerPattern::FMLSv2f32_OP1:
   case AArch64MachineCombinerPattern::FMLSv2i32_indexed_OP1: {
-    RC = &AArch64::FPR64RegClass;
+    RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     Register NewVR = MRI.createVirtualRegister(RC);
     MachineInstrBuilder MIB1 =
         BuildMI(MF, MIMetadata(Root), TII->get(AArch64::FNEGv2f32), NewVR)
@@ -8245,7 +8246,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
   }
   case AArch64MachineCombinerPattern::FMLSv4f32_OP1:
   case AArch64MachineCombinerPattern::FMLSv4i32_indexed_OP1: {
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Register NewVR = MRI.createVirtualRegister(RC);
     MachineInstrBuilder MIB1 =
         BuildMI(MF, MIMetadata(Root), TII->get(AArch64::FNEGv4f32), NewVR)
@@ -8265,7 +8266,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
   }
   case AArch64MachineCombinerPattern::FMLSv2f64_OP1:
   case AArch64MachineCombinerPattern::FMLSv2i64_indexed_OP1: {
-    RC = &AArch64::FPR128RegClass;
+    RC = AArch64::RegClass(AArch64::FPR128RegClassID);
     Register NewVR = MRI.createVirtualRegister(RC);
     MachineInstrBuilder MIB1 =
         BuildMI(MF, MIMetadata(Root), TII->get(AArch64::FNEGv2f64), NewVR)
@@ -8289,7 +8290,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
         (Pattern == AArch64MachineCombinerPattern::FMULv2i32_indexed_OP1) ? 1
                                                                           : 2;
     genIndexedMultiply(Root, InsInstrs, IdxDupOp, AArch64::FMULv2i32_indexed,
-                       &AArch64::FPR128RegClass, MRI);
+                       AArch64::RegClass(AArch64::FPR128RegClassID), MRI);
     break;
   }
   case AArch64MachineCombinerPattern::FMULv2i64_indexed_OP1:
@@ -8298,7 +8299,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
         (Pattern == AArch64MachineCombinerPattern::FMULv2i64_indexed_OP1) ? 1
                                                                           : 2;
     genIndexedMultiply(Root, InsInstrs, IdxDupOp, AArch64::FMULv2i64_indexed,
-                       &AArch64::FPR128RegClass, MRI);
+                       AArch64::RegClass(AArch64::FPR128RegClassID), MRI);
     break;
   }
   case AArch64MachineCombinerPattern::FMULv4i16_indexed_OP1:
@@ -8307,7 +8308,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
         (Pattern == AArch64MachineCombinerPattern::FMULv4i16_indexed_OP1) ? 1
                                                                           : 2;
     genIndexedMultiply(Root, InsInstrs, IdxDupOp, AArch64::FMULv4i16_indexed,
-                       &AArch64::FPR128_loRegClass, MRI);
+                       AArch64::RegClass(AArch64::FPR128_loRegClassID), MRI);
     break;
   }
   case AArch64MachineCombinerPattern::FMULv4i32_indexed_OP1:
@@ -8316,7 +8317,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
         (Pattern == AArch64MachineCombinerPattern::FMULv4i32_indexed_OP1) ? 1
                                                                           : 2;
     genIndexedMultiply(Root, InsInstrs, IdxDupOp, AArch64::FMULv4i32_indexed,
-                       &AArch64::FPR128RegClass, MRI);
+                       AArch64::RegClass(AArch64::FPR128RegClassID), MRI);
     break;
   }
   case AArch64MachineCombinerPattern::FMULv8i16_indexed_OP1:
@@ -8325,7 +8326,7 @@ void AArch64InstrInfo::genAlternativeCodeSequence(
         (Pattern == AArch64MachineCombinerPattern::FMULv8i16_indexed_OP1) ? 1
                                                                           : 2;
     genIndexedMultiply(Root, InsInstrs, IdxDupOp, AArch64::FMULv8i16_indexed,
-                       &AArch64::FPR128_loRegClass, MRI);
+                       AArch64::RegClass(AArch64::FPR128_loRegClassID), MRI);
     break;
   }
   case AArch64MachineCombinerPattern::FNMADD: {
@@ -8669,7 +8670,7 @@ AArch64InstrInfo::findRegisterToSaveLRTo(outliner::Candidate &C) const {
       static_cast<const AArch64RegisterInfo *>(&TRI);
   // Check if there is an available register across the sequence that we can
   // use.
-  for (unsigned Reg : AArch64::GPR64RegClass) {
+  for (unsigned Reg : *AArch64::RegClass(AArch64::GPR64RegClassID)) {
     if (!ARI->isReservedReg(*MF, Reg) &&
         Reg != AArch64::LR &&  // LR is not reserved, but don't use it.
         Reg != AArch64::X16 && // X16 is not guaranteed to be preserved.
@@ -10182,7 +10183,7 @@ void AArch64PipelinerLoopInfo::createRemainingIterationsGreaterCondition(
   // If CC holds, CurCond+1 is returned; otherwise CurCond is returned.
   auto AccumulateCond = [&](Register CurCond,
                             AArch64CC::CondCode CC) -> Register {
-    Register NewCond = MRI.createVirtualRegister(&AArch64::GPR64commonRegClass);
+    Register NewCond = MRI.createVirtualRegister(AArch64::RegClass(AArch64::GPR64commonRegClassID));
     BuildMI(MBB, MBB.end(), Comp->getDebugLoc(), TII->get(AArch64::CSINCXr))
         .addReg(NewCond, RegState::Define)
         .addReg(CurCond)

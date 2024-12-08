@@ -515,7 +515,7 @@ static void handleMustTailForwardedRegisters(MachineIRBuilder &MIRBuilder,
   // Conservatively forward X8, since it might be used for an aggregate
   // return.
   if (!CCInfo.isAllocated(AArch64::X8)) {
-    Register X8VReg = MF.addLiveIn(AArch64::X8, &AArch64::GPR64RegClass);
+    Register X8VReg = MF.addLiveIn(AArch64::X8, AArch64::RegClass(AArch64::GPR64RegClassID));
     Forwards.push_back(ForwardedRegister(X8VReg, AArch64::X8, MVT::i64));
   }
 

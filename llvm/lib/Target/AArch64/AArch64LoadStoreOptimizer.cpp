@@ -1307,7 +1307,7 @@ AArch64LoadStoreOpt::promoteLoadFromStore(MachineBasicBlock::iterator LoadI,
     int Width = LoadSize * 8;
     Register DestReg =
         IsStoreXReg ? Register(TRI->getMatchingSuperReg(
-                          LdRt, AArch64::sub_32, &AArch64::GPR64RegClass))
+                          LdRt, AArch64::sub_32, AArch64::RegClass(AArch64::GPR64RegClassID)))
                     : LdRt;
 
     assert((UnscaledLdOffset >= UnscaledStOffset &&

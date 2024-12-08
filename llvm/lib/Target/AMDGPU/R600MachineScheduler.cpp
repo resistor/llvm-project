@@ -262,16 +262,16 @@ R600SchedStrategy::AluKind R600SchedStrategy::getAluKind(SUnit *SU) const {
 
   // Is the result already member of a X/Y/Z/W class ?
   Register DestReg = MI->getOperand(0).getReg();
-  if (regBelongsToClass(DestReg, &R600::R600_TReg32_XRegClass) ||
-      regBelongsToClass(DestReg, &R600::R600_AddrRegClass))
+  if (regBelongsToClass(DestReg, R600::RegClass(R600::R600_TReg32_XRegClassID)) ||
+      regBelongsToClass(DestReg, R600::RegClass(R600::R600_AddrRegClassID)))
     return AluT_X;
-  if (regBelongsToClass(DestReg, &R600::R600_TReg32_YRegClass))
+  if (regBelongsToClass(DestReg, R600::RegClass(R600::R600_TReg32_YRegClassID)))
     return AluT_Y;
-  if (regBelongsToClass(DestReg, &R600::R600_TReg32_ZRegClass))
+  if (regBelongsToClass(DestReg, R600::RegClass(R600::R600_TReg32_ZRegClassID)))
     return AluT_Z;
-  if (regBelongsToClass(DestReg, &R600::R600_TReg32_WRegClass))
+  if (regBelongsToClass(DestReg, R600::RegClass(R600::R600_TReg32_WRegClassID)))
     return AluT_W;
-  if (regBelongsToClass(DestReg, &R600::R600_Reg128RegClass))
+  if (regBelongsToClass(DestReg, R600::RegClass(R600::R600_Reg128RegClassID)))
     return AluT_XYZW;
 
   // LDS src registers cannot be used in the Trans slot.
@@ -356,16 +356,16 @@ void R600SchedStrategy::AssignSlot(MachineInstr* MI, unsigned Slot) {
   // Constrains the regclass of DestReg to assign it to Slot
   switch (Slot) {
   case 0:
-    MRI->constrainRegClass(DestReg, &R600::R600_TReg32_XRegClass);
+    MRI->constrainRegClass(DestReg, R600::RegClass(R600::R600_TReg32_XRegClassID));
     break;
   case 1:
-    MRI->constrainRegClass(DestReg, &R600::R600_TReg32_YRegClass);
+    MRI->constrainRegClass(DestReg, R600::RegClass(R600::R600_TReg32_YRegClassID));
     break;
   case 2:
-    MRI->constrainRegClass(DestReg, &R600::R600_TReg32_ZRegClass);
+    MRI->constrainRegClass(DestReg, R600::RegClass(R600::R600_TReg32_ZRegClassID));
     break;
   case 3:
-    MRI->constrainRegClass(DestReg, &R600::R600_TReg32_WRegClass);
+    MRI->constrainRegClass(DestReg, R600::RegClass(R600::R600_TReg32_WRegClassID));
     break;
   }
 }

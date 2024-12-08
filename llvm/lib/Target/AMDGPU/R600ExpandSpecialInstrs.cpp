@@ -129,7 +129,7 @@ bool R600ExpandSpecialInstrsPass::runOnMachineFunction(MachineFunction &MF) {
         for (unsigned Chan = 0; Chan < 4; ++Chan) {
           bool Mask = (Chan != TRI.getHWRegChan(DstReg));
           unsigned SubDstReg =
-              R600::R600_TReg32RegClass.getRegister((DstBase * 4) + Chan);
+              R600::RegClass(R600::R600_TReg32RegClassID)->getRegister((DstBase * 4) + Chan);
           MachineInstr *BMI =
               TII->buildSlotOfVectorInstruction(MBB, &MI, Chan, SubDstReg);
           if (Chan > 0) {
@@ -229,7 +229,7 @@ bool R600ExpandSpecialInstrsPass::runOnMachineFunction(MachineFunction &MF) {
           // the current Channel.
           Mask = (Chan != TRI.getHWRegChan(DstReg));
           unsigned DstBase = TRI.getEncodingValue(DstReg) & HW_REG_MASK;
-          DstReg = R600::R600_TReg32RegClass.getRegister((DstBase * 4) + Chan);
+          DstReg = R600::RegClass(R600::R600_TReg32RegClassID)->getRegister((DstBase * 4) + Chan);
         }
 
         // Set the IsLast bit

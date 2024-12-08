@@ -2227,7 +2227,7 @@ Register AMDGPULegalizerInfo::getSegmentAperture(
     //  artificial "HI" aperture registers and prevent this kind of issue from
     //  happening.
     Register Dst = MRI.createGenericVirtualRegister(S64);
-    MRI.setRegClass(Dst, &AMDGPU::SReg_64RegClass);
+    MRI.setRegClass(Dst, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
     B.buildInstr(AMDGPU::S_MOV_B64, {Dst}, {Register(ApertureRegNo)});
     return B.buildUnmerge(S32, Dst).getReg(1);
   }
@@ -2902,7 +2902,7 @@ bool AMDGPULegalizerInfo::buildPCRelGlobalAddress(Register DstReg, LLT PtrTy,
     MIB.addGlobalAddress(GV, Offset, GAFlags + 1);
 
   if (!B.getMRI()->getRegClassOrNull(PCReg))
-    B.getMRI()->setRegClass(PCReg, &AMDGPU::SReg_64RegClass);
+    B.getMRI()->setRegClass(PCReg, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
 
   if (PtrTy.getSizeInBits() == 32)
     B.buildExtract(DstReg, PCReg, 0);
@@ -2924,7 +2924,7 @@ void AMDGPULegalizerInfo::buildAbsGlobalAddress(
                         : MRI.createGenericVirtualRegister(S32);
 
   if (!MRI.getRegClassOrNull(AddrLo))
-    MRI.setRegClass(AddrLo, &AMDGPU::SReg_32RegClass);
+    MRI.setRegClass(AddrLo, AMDGPU::RegClass(AMDGPU::SGPR_32RegClassID));
 
   // Write the lower half.
   B.buildInstr(AMDGPU::S_MOV_B32)
@@ -2937,7 +2937,7 @@ void AMDGPULegalizerInfo::buildAbsGlobalAddress(
            "Must provide a 64-bit pointer type!");
 
     Register AddrHi = MRI.createGenericVirtualRegister(S32);
-    MRI.setRegClass(AddrHi, &AMDGPU::SReg_32RegClass);
+    MRI.setRegClass(AddrHi, AMDGPU::RegClass(AMDGPU::SGPR_32RegClassID));
 
     B.buildInstr(AMDGPU::S_MOV_B32)
         .addDef(AddrHi)
@@ -2950,7 +2950,7 @@ void AMDGPULegalizerInfo::buildAbsGlobalAddress(
                            : MRI.createGenericVirtualRegister(LLT::scalar(64));
 
     if (!MRI.getRegClassOrNull(AddrDst))
-      MRI.setRegClass(AddrDst, &AMDGPU::SReg_64RegClass);
+      MRI.setRegClass(AddrDst, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
 
     B.buildMergeValues(AddrDst, {AddrLo, AddrHi});
 
@@ -4332,17 +4332,17 @@ bool AMDGPULegalizerInfo::loadInputValue(
     switch (ArgType) {
     case AMDGPUFunctionArgInfo::WORKGROUP_ID_X:
       Arg = &WorkGroupIDX;
-      ArgRC = &AMDGPU::SReg_32RegClass;
+      ArgRC = AMDGPU::RegClass(AMDGPU::SGPR_32RegClassID);
       ArgTy = LLT::scalar(32);
       break;
     case AMDGPUFunctionArgInfo::WORKGROUP_ID_Y:
       Arg = &WorkGroupIDY;
-      ArgRC = &AMDGPU::SReg_32RegClass;
+      ArgRC = AMDGPU::RegClass(AMDGPU::SGPR_32RegClassID);
       ArgTy = LLT::scalar(32);
       break;
     case AMDGPUFunctionArgInfo::WORKGROUP_ID_Z:
       Arg = &WorkGroupIDZ;
-      ArgRC = &AMDGPU::SReg_32RegClass;
+      ArgRC = AMDGPU::RegClass(AMDGPU::SGPR_32RegClassID);
       ArgTy = LLT::scalar(32);
       break;
     default:
@@ -5022,7 +5022,7 @@ bool AMDGPULegalizerInfo::legalizeFDIV32(MachineInstr &MI,
   Register SavedSPDenormMode;
   if (!PreservesDenormals) {
     if (HasDynamicDenormals) {
-      SavedSPDenormMode = MRI.createVirtualRegister(&AMDGPU::SReg_32RegClass);
+      SavedSPDenormMode = MRI.createVirtualRegister(AMDGPU::RegClass(AMDGPU::SGPR_32RegClassID));
       B.buildInstr(AMDGPU::S_GETREG_B32)
           .addDef(SavedSPDenormMode)
           .addImm(SPDenormModeBitField);

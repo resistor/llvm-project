@@ -2947,9 +2947,9 @@ bool SIRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MI,
       bool IsSALU = isSGPRClass(TII->getOpRegClass(*MI, FIOperandNum));
       bool LiveSCC = RS->isRegUsed(AMDGPU::SCC) &&
                      !MI->definesRegister(AMDGPU::SCC, /*TRI=*/nullptr);
-      const TargetRegisterClass *RC = IsSALU && !LiveSCC
-                                          ? &AMDGPU::SReg_32RegClass
-                                          : &AMDGPU::VGPR_32RegClass;
+      const TargetRegisterClass *RC = AMDGPU::RegClass(IsSALU && !LiveSCC
+                                          ? AMDGPU::SReg_32RegClassID
+                                          : AMDGPU::VGPR_32RegClassID);
       bool IsCopy = MI->getOpcode() == AMDGPU::V_MOV_B32_e32 ||
                     MI->getOpcode() == AMDGPU::V_MOV_B32_e64 ||
                     MI->getOpcode() == AMDGPU::S_MOV_B32;
@@ -2963,7 +2963,7 @@ bool SIRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MI,
             IsSALU && !LiveSCC ? AMDGPU::S_LSHR_B32 : AMDGPU::V_LSHRREV_B32_e64;
         Register TmpResultReg = ResultReg;
         if (IsSALU && LiveSCC) {
-          TmpResultReg = RS->scavengeRegisterBackwards(AMDGPU::VGPR_32RegClass,
+          TmpResultReg = RS->scavengeRegisterBackwards(AMDGPU::RegClass(AMDGPU::VGPR_32RegClassID),
                                                        MI, false, 0);
         }
 
@@ -3784,14 +3784,14 @@ MachineInstr *SIRegisterInfo::findReachingDef(Register Reg, unsigned SubReg,
 MCPhysReg SIRegisterInfo::get32BitRegister(MCPhysReg Reg) const {
   assert(getRegSizeInBits(*getPhysRegBaseClass(Reg)) <= 32);
 
-  for (const TargetRegisterClass &RC : { AMDGPU::VGPR_32RegClass,
-                                         AMDGPU::SReg_32RegClass,
-                                         AMDGPU::AGPR_32RegClass } ) {
-    if (MCPhysReg Super = getMatchingSuperReg(Reg, AMDGPU::lo16, &RC))
+  for (const unsigned RCID : { AMDGPU::VGPR_32RegClassID,
+                                         AMDGPU::SReg_32RegClassID,
+                                         AMDGPU::AGPR_32RegClassID } ) {
+    if (MCPhysReg Super = getMatchingSuperReg(Reg, AMDGPU::lo16, AMDGPU::RegClass(RCID)))
       return Super;
   }
   if (MCPhysReg Super = getMatchingSuperReg(Reg, AMDGPU::hi16,
-                                            &AMDGPU::VGPR_32RegClass)) {
+                                            AMDGPU::RegClass(AMDGPU::VGPR_32RegClassID))) {
       return Super;
   }
 

@@ -46,7 +46,7 @@ class TargetRegisterClass {
 public:
   using iterator = const MCPhysReg *;
   using const_iterator = const MCPhysReg *;
-  using sc_iterator = const TargetRegisterClass* const *;
+  using sc_iterator = const unsigned *;
 
   // Instance variables filled by tablegen, do not use!
   const MCRegisterClass *MC;
@@ -185,7 +185,7 @@ public:
   /// Return true if this TargetRegisterClass is a subset
   /// class of at least one other TargetRegisterClass.
   bool isASubClass() const {
-    return SuperClasses[0] != nullptr;
+    return SuperClasses[0] != ~0U;
   }
 
   /// Returns the preferred order for allocating registers from this register
@@ -237,7 +237,7 @@ struct RegClassWeight {
 ///
 class TargetRegisterInfo : public MCRegisterInfo {
 public:
-  using regclass_iterator = const TargetRegisterClass * const *;
+  using regclass_iterator = const TargetRegisterClass *;
   using vt_iterator = const MVT::SimpleValueType *;
   struct RegClassInfo {
     unsigned RegSize, SpillSize, SpillAlignment;
@@ -833,7 +833,7 @@ public:
   /// See class MCOperandInfo.
   const TargetRegisterClass *getRegClass(unsigned i) const {
     assert(i < getNumRegClasses() && "Register Class ID out of range");
-    return RegClassBegin[i];
+    return RegClassBegin + i;
   }
 
   /// Returns the name of the register class.

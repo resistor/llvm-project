@@ -212,10 +212,10 @@ TargetRegisterInfo::getMinimalPhysRegClass(MCRegister reg, MVT VT) const {
   // Pick the most sub register class of the right type that contains
   // this physreg.
   const TargetRegisterClass* BestRC = nullptr;
-  for (const TargetRegisterClass* RC : regclasses()) {
-    if ((VT == MVT::Other || isTypeLegalForClass(*RC, VT)) &&
-        RC->contains(reg) && (!BestRC || BestRC->hasSubClass(RC)))
-      BestRC = RC;
+  for (const TargetRegisterClass &RC : regclasses()) {
+    if ((VT == MVT::Other || isTypeLegalForClass(RC, VT)) &&
+        RC.contains(reg) && (!BestRC || BestRC->hasSubClass(&RC)))
+      BestRC = &RC;
   }
 
   assert(BestRC && "Couldn't find the register class");
@@ -230,10 +230,10 @@ TargetRegisterInfo::getMinimalPhysRegClassLLT(MCRegister reg, LLT Ty) const {
   // Pick the most sub register class of the right type that contains
   // this physreg.
   const TargetRegisterClass *BestRC = nullptr;
-  for (const TargetRegisterClass *RC : regclasses()) {
-    if ((!Ty.isValid() || isTypeLegalForClass(*RC, Ty)) && RC->contains(reg) &&
-        (!BestRC || BestRC->hasSubClass(RC)))
-      BestRC = RC;
+  for (const TargetRegisterClass &RC : regclasses()) {
+    if ((!Ty.isValid() || isTypeLegalForClass(RC, Ty)) && RC.contains(reg) &&
+        (!BestRC || BestRC->hasSubClass(&RC)))
+      BestRC = &RC;
   }
 
   return BestRC;
@@ -258,9 +258,9 @@ BitVector TargetRegisterInfo::getAllocatableSet(const MachineFunction &MF,
     if (SubClass)
       getAllocatableSetForRC(MF, SubClass, Allocatable);
   } else {
-    for (const TargetRegisterClass *C : regclasses())
-      if (C->isAllocatable())
-        getAllocatableSetForRC(MF, C, Allocatable);
+    for (const TargetRegisterClass &C : regclasses())
+      if (C.isAllocatable())
+        getAllocatableSetForRC(MF, &C, Allocatable);
   }
 
   // Mask out the reserved registers

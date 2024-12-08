@@ -495,9 +495,9 @@ static void handleNormalInst(const MachineInstr &MI, LOHInfo *LOHInfos) {
   for (const MachineOperand &MO : MI.operands()) {
     if (MO.isRegMask()) {
       const uint32_t *RegMask = MO.getRegMask();
-      for (MCPhysReg Reg : AArch64::GPR32RegClass)
+      for (MCPhysReg Reg : *AArch64::RegClass(AArch64::GPR32RegClassID))
         handleRegMaskClobber(RegMask, Reg, LOHInfos);
-      for (MCPhysReg Reg : AArch64::GPR64RegClass)
+      for (MCPhysReg Reg : *AArch64::RegClass(AArch64::GPR64RegClassID))
         handleRegMaskClobber(RegMask, Reg, LOHInfos);
       continue;
     }

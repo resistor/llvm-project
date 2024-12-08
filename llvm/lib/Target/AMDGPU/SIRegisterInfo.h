@@ -14,6 +14,7 @@
 #ifndef LLVM_LIB_TARGET_AMDGPU_SIREGISTERINFO_H
 #define LLVM_LIB_TARGET_AMDGPU_SIREGISTERINFO_H
 
+#include "MCTargetDesc/AMDGPUMCTargetDesc.h"
 #include "llvm/ADT/BitVector.h"
 
 #define GET_REGINFO_HEADER
@@ -351,13 +352,13 @@ public:
                                  const MachineRegisterInfo &MRI) const override;
 
   const TargetRegisterClass *getBoolRC() const {
-    return isWave32 ? &AMDGPU::SReg_32RegClass
-                    : &AMDGPU::SReg_64RegClass;
+    return AMDGPU::RegClass(isWave32 ? AMDGPU::SReg_32RegClassID
+                    : AMDGPU::SReg_64RegClassID);
   }
 
   const TargetRegisterClass *getWaveMaskRegClass() const {
-    return isWave32 ? &AMDGPU::SReg_32_XM0_XEXECRegClass
-                    : &AMDGPU::SReg_64_XEXECRegClass;
+    return AMDGPU::RegClass(isWave32 ? AMDGPU::SReg_32_XM0_XEXECRegClassID
+                    : AMDGPU::SReg_64_XEXECRegClassID);
   }
 
   // Return the appropriate register class to use for 64-bit VGPRs for the

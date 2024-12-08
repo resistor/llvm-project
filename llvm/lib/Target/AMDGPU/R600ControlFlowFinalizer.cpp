@@ -272,21 +272,21 @@ private:
         continue;
       if (MO.isDef()) {
         Register Reg = MO.getReg();
-        if (R600::R600_Reg128RegClass.contains(Reg))
+        if (R600::RegClass(R600::R600_Reg128RegClassID)->contains(Reg))
           DstMI = Reg;
         else
           DstMI = TRI->getMatchingSuperReg(Reg,
               R600RegisterInfo::getSubRegFromChannel(TRI->getHWRegChan(Reg)),
-              &R600::R600_Reg128RegClass);
+              R600::RegClass(R600::R600_Reg128RegClassID));
       }
       if (MO.isUse()) {
         Register Reg = MO.getReg();
-        if (R600::R600_Reg128RegClass.contains(Reg))
+        if (R600::RegClass(R600::R600_Reg128RegClassID)->contains(Reg))
           SrcMI = Reg;
         else
           SrcMI = TRI->getMatchingSuperReg(Reg,
               R600RegisterInfo::getSubRegFromChannel(TRI->getHWRegChan(Reg)),
-              &R600::R600_Reg128RegClass);
+              R600::RegClass(R600::R600_Reg128RegClassID));
       }
     }
     if ((DstRegs.find(SrcMI) == DstRegs.end())) {

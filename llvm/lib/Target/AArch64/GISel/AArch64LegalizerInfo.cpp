@@ -1530,7 +1530,7 @@ bool AArch64LegalizerInfo::legalizeSmallCMGlobalValue(
   auto ADRP = MIRBuilder.buildInstr(AArch64::ADRP, {LLT::pointer(0, 64)}, {})
                   .addGlobalAddress(GV, Offset, OpFlags | AArch64II::MO_PAGE);
   // Set the regclass on the dest reg too.
-  MRI.setRegClass(ADRP.getReg(0), &AArch64::GPR64RegClass);
+  MRI.setRegClass(ADRP.getReg(0), AArch64::RegClass(AArch64::GPR64RegClassID));
 
   // MO_TAGGED on the page indicates a tagged address. Set the tag now. We do so
   // by creating a MOVK that sets bits 48-63 of the register to (global address
@@ -1552,7 +1552,7 @@ bool AArch64LegalizerInfo::legalizeSmallCMGlobalValue(
                .addGlobalAddress(GV, 0x100000000,
                                  AArch64II::MO_PREL | AArch64II::MO_G3)
                .addImm(48);
-    MRI.setRegClass(ADRP.getReg(0), &AArch64::GPR64RegClass);
+    MRI.setRegClass(ADRP.getReg(0), AArch64::RegClass(AArch64::GPR64RegClassID));
   }
 
   MIRBuilder.buildInstr(AArch64::G_ADD_LOW, {DstReg}, {ADRP})
@@ -2149,7 +2149,7 @@ bool AArch64LegalizerInfo::legalizeAtomicCmpxchg128(
       break;
     }
 
-    auto Scratch = MRI.createVirtualRegister(&AArch64::GPR64RegClass);
+    auto Scratch = MRI.createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
     CAS = MIRBuilder.buildInstr(Opcode, {DstLo, DstHi, Scratch},
                                 {Addr, DesiredI->getOperand(0),
                                  DesiredI->getOperand(1), NewI->getOperand(0),
@@ -2240,7 +2240,7 @@ bool AArch64LegalizerInfo::legalizeDynStackAlloc(
       Helper.getDynStackAllocTargetPtr(SPReg, AllocSize, Alignment, PtrTy);
   auto NewMI =
       MIRBuilder.buildInstr(AArch64::PROBED_STACKALLOC_DYN, {}, {SPTmp});
-  MRI.setRegClass(NewMI.getReg(0), &AArch64::GPR64commonRegClass);
+  MRI.setRegClass(NewMI.getReg(0), AArch64::RegClass(AArch64::GPR64commonRegClassID));
   MIRBuilder.setInsertPt(*NewMI->getParent(), NewMI);
   MIRBuilder.buildCopy(Dst, SPTmp);
 

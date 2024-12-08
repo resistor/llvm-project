@@ -384,26 +384,26 @@ AArch64TargetLowering::AArch64TargetLowering(const TargetMachine &TM,
   setBooleanVectorContents(ZeroOrNegativeOneBooleanContent);
 
   // Set up the register classes.
-  addRegisterClass(MVT::i32, &AArch64::GPR32allRegClass);
-  addRegisterClass(MVT::i64, &AArch64::GPR64allRegClass);
+  addRegisterClass(MVT::i32, AArch64::RegClass(AArch64::GPR32allRegClassID));
+  addRegisterClass(MVT::i64, AArch64::RegClass(AArch64::GPR64allRegClassID));
 
   if (Subtarget->hasLS64()) {
-    addRegisterClass(MVT::i64x8, &AArch64::GPR64x8ClassRegClass);
+    addRegisterClass(MVT::i64x8, AArch64::RegClass(AArch64::GPR64x8ClassRegClassID));
     setOperationAction(ISD::LOAD, MVT::i64x8, Custom);
     setOperationAction(ISD::STORE, MVT::i64x8, Custom);
   }
 
   if (Subtarget->hasFPARMv8()) {
-    addRegisterClass(MVT::f16, &AArch64::FPR16RegClass);
-    addRegisterClass(MVT::bf16, &AArch64::FPR16RegClass);
-    addRegisterClass(MVT::f32, &AArch64::FPR32RegClass);
-    addRegisterClass(MVT::f64, &AArch64::FPR64RegClass);
-    addRegisterClass(MVT::f128, &AArch64::FPR128RegClass);
+    addRegisterClass(MVT::f16, AArch64::RegClass(AArch64::FPR16RegClassID));
+    addRegisterClass(MVT::bf16, AArch64::RegClass(AArch64::FPR16RegClassID));
+    addRegisterClass(MVT::f32, AArch64::RegClass(AArch64::FPR32RegClassID));
+    addRegisterClass(MVT::f64, AArch64::RegClass(AArch64::FPR64RegClassID));
+    addRegisterClass(MVT::f128, AArch64::RegClass(AArch64::FPR128RegClassID));
   }
 
   if (Subtarget->hasNEON()) {
-    addRegisterClass(MVT::v16i8, &AArch64::FPR8RegClass);
-    addRegisterClass(MVT::v8i16, &AArch64::FPR16RegClass);
+    addRegisterClass(MVT::v16i8, AArch64::RegClass(AArch64::FPR8RegClassID));
+    addRegisterClass(MVT::v8i16, AArch64::RegClass(AArch64::FPR16RegClassID));
 
     addDRType(MVT::v2f32);
     addDRType(MVT::v8i8);
@@ -426,42 +426,42 @@ AArch64TargetLowering::AArch64TargetLowering(const TargetMachine &TM,
 
   if (Subtarget->isSVEorStreamingSVEAvailable()) {
     // Add legal sve predicate types
-    addRegisterClass(MVT::nxv1i1, &AArch64::PPRRegClass);
-    addRegisterClass(MVT::nxv2i1, &AArch64::PPRRegClass);
-    addRegisterClass(MVT::nxv4i1, &AArch64::PPRRegClass);
-    addRegisterClass(MVT::nxv8i1, &AArch64::PPRRegClass);
-    addRegisterClass(MVT::nxv16i1, &AArch64::PPRRegClass);
+    addRegisterClass(MVT::nxv1i1, AArch64::RegClass(AArch64::PPRRegClassID));
+    addRegisterClass(MVT::nxv2i1, AArch64::RegClass(AArch64::PPRRegClassID));
+    addRegisterClass(MVT::nxv4i1, AArch64::RegClass(AArch64::PPRRegClassID));
+    addRegisterClass(MVT::nxv8i1, AArch64::RegClass(AArch64::PPRRegClassID));
+    addRegisterClass(MVT::nxv16i1, AArch64::RegClass(AArch64::PPRRegClassID));
 
     // Add legal sve data types
-    addRegisterClass(MVT::nxv16i8, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv8i16, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv4i32, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv2i64, &AArch64::ZPRRegClass);
+    addRegisterClass(MVT::nxv16i8, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv8i16, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv4i32, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv2i64, AArch64::RegClass(AArch64::ZPRRegClassID));
 
-    addRegisterClass(MVT::nxv2f16, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv4f16, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv8f16, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv2f32, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv4f32, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv2f64, &AArch64::ZPRRegClass);
+    addRegisterClass(MVT::nxv2f16, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv4f16, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv8f16, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv2f32, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv4f32, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv2f64, AArch64::RegClass(AArch64::ZPRRegClassID));
 
-    addRegisterClass(MVT::nxv2bf16, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv4bf16, &AArch64::ZPRRegClass);
-    addRegisterClass(MVT::nxv8bf16, &AArch64::ZPRRegClass);
+    addRegisterClass(MVT::nxv2bf16, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv4bf16, AArch64::RegClass(AArch64::ZPRRegClassID));
+    addRegisterClass(MVT::nxv8bf16, AArch64::RegClass(AArch64::ZPRRegClassID));
 
     if (Subtarget->useSVEForFixedLengthVectors()) {
       for (MVT VT : MVT::integer_fixedlen_vector_valuetypes())
         if (useSVEForFixedLengthVectorVT(VT))
-          addRegisterClass(VT, &AArch64::ZPRRegClass);
+          addRegisterClass(VT, AArch64::RegClass(AArch64::ZPRRegClassID));
 
       for (MVT VT : MVT::fp_fixedlen_vector_valuetypes())
         if (useSVEForFixedLengthVectorVT(VT))
-          addRegisterClass(VT, &AArch64::ZPRRegClass);
+          addRegisterClass(VT, AArch64::RegClass(AArch64::ZPRRegClassID));
     }
   }
 
   if (Subtarget->hasSVE2p1() || Subtarget->hasSME2()) {
-    addRegisterClass(MVT::aarch64svcount, &AArch64::PPRRegClass);
+    addRegisterClass(MVT::aarch64svcount, AArch64::RegClass(AArch64::PPRRegClassID));
     setOperationPromotedToType(ISD::LOAD, MVT::aarch64svcount, MVT::nxv16i1);
     setOperationPromotedToType(ISD::STORE, MVT::aarch64svcount, MVT::nxv16i1);
 
@@ -2217,13 +2217,13 @@ void AArch64TargetLowering::addTypeForFixedLengthSVE(MVT VT) {
 }
 
 void AArch64TargetLowering::addDRType(MVT VT) {
-  addRegisterClass(VT, &AArch64::FPR64RegClass);
+  addRegisterClass(VT, AArch64::RegClass(AArch64::FPR64RegClassID));
   if (Subtarget->isNeonAvailable())
     addTypeForNEON(VT);
 }
 
 void AArch64TargetLowering::addQRType(MVT VT) {
-  addRegisterClass(VT, &AArch64::FPR128RegClass);
+  addRegisterClass(VT, AArch64::RegClass(AArch64::FPR128RegClassID));
   if (Subtarget->isNeonAvailable())
     addTypeForNEON(VT);
 }
@@ -3195,7 +3195,7 @@ AArch64TargetLowering::EmitAllocateZABuffer(MachineInstr &MI,
 
     // The SUBXrs below won't always be emitted in a form that accepts SP
     // directly
-    Register SP = MRI.createVirtualRegister(&AArch64::GPR64RegClass);
+    Register SP = MRI.createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
     BuildMI(*BB, MI, MI.getDebugLoc(), TII->get(TargetOpcode::COPY), SP)
         .addReg(AArch64::SP);
 
@@ -7776,27 +7776,27 @@ SDValue AArch64TargetLowering::LowerFormalArguments(
       const TargetRegisterClass *RC;
 
       if (RegVT == MVT::i32)
-        RC = &AArch64::GPR32RegClass;
+        RC = AArch64::RegClass(AArch64::GPR32RegClassID);
       else if (RegVT == MVT::i64)
-        RC = &AArch64::GPR64RegClass;
+        RC = AArch64::RegClass(AArch64::GPR64RegClassID);
       else if (RegVT == MVT::f16 || RegVT == MVT::bf16)
-        RC = &AArch64::FPR16RegClass;
+        RC = AArch64::RegClass(AArch64::FPR16RegClassID);
       else if (RegVT == MVT::f32)
-        RC = &AArch64::FPR32RegClass;
+        RC = AArch64::RegClass(AArch64::FPR32RegClassID);
       else if (RegVT == MVT::f64 || RegVT.is64BitVector())
-        RC = &AArch64::FPR64RegClass;
+        RC = AArch64::RegClass(AArch64::FPR64RegClassID);
       else if (RegVT == MVT::f128 || RegVT.is128BitVector())
-        RC = &AArch64::FPR128RegClass;
+        RC = AArch64::RegClass(AArch64::FPR128RegClassID);
       else if (RegVT.isScalableVector() &&
                RegVT.getVectorElementType() == MVT::i1) {
         FuncInfo->setIsSVECC(true);
-        RC = &AArch64::PPRRegClass;
+        RC = AArch64::RegClass(AArch64::PPRRegClassID);
       } else if (RegVT == MVT::aarch64svcount) {
         FuncInfo->setIsSVECC(true);
-        RC = &AArch64::PPRRegClass;
+        RC = AArch64::RegClass(AArch64::PPRRegClassID);
       } else if (RegVT.isScalableVector()) {
         FuncInfo->setIsSVECC(true);
-        RC = &AArch64::ZPRRegClass;
+        RC = AArch64::RegClass(AArch64::ZPRRegClassID);
       } else
         llvm_unreachable("RegVT not supported by FORMAL_ARGUMENTS Lowering");
 
@@ -7874,7 +7874,7 @@ SDValue AArch64TargetLowering::LowerFormalArguments(
         unsigned ObjOffset = ArgOffset + BEAlign;
         if (CallConv == CallingConv::ARM64EC_Thunk_X64)
           ObjOffset += 32;
-        Register VReg = MF.addLiveIn(AArch64::X4, &AArch64::GPR64RegClass);
+        Register VReg = MF.addLiveIn(AArch64::X4, AArch64::RegClass(AArch64::GPR64RegClassID));
         SDValue Val = DAG.getCopyFromReg(Chain, DL, VReg, MVT::i64);
         FIN = DAG.getNode(ISD::ADD, DL, MVT::i64, Val,
                           DAG.getConstant(ObjOffset, DL, MVT::i64));
@@ -8037,7 +8037,7 @@ SDValue AArch64TargetLowering::LowerFormalArguments(
 
       // Conservatively forward X8, since it might be used for aggregate return.
       if (!CCInfo.isAllocated(AArch64::X8)) {
-        Register X8VReg = MF.addLiveIn(AArch64::X8, &AArch64::GPR64RegClass);
+        Register X8VReg = MF.addLiveIn(AArch64::X8, AArch64::RegClass(AArch64::GPR64RegClassID));
         Forwards.push_back(ForwardedRegister(X8VReg, AArch64::X8, MVT::i64));
       }
     }
@@ -8169,7 +8169,7 @@ void AArch64TargetLowering::saveVarArgRegisters(CCState &CCInfo,
       // compute its address relative to x4.  For a normal AArch64->AArch64
       // call, x4 == sp on entry, but calls from an entry thunk can pass in a
       // different address.
-      Register VReg = MF.addLiveIn(AArch64::X4, &AArch64::GPR64RegClass);
+      Register VReg = MF.addLiveIn(AArch64::X4, AArch64::RegClass(AArch64::GPR64RegClassID));
       SDValue Val = DAG.getCopyFromReg(Chain, DL, VReg, MVT::i64);
       FIN = DAG.getNode(ISD::SUB, DL, MVT::i64, Val,
                         DAG.getConstant(GPRSaveSize, DL, MVT::i64));
@@ -8178,7 +8178,7 @@ void AArch64TargetLowering::saveVarArgRegisters(CCState &CCInfo,
     }
 
     for (unsigned i = FirstVariadicGPR; i < NumGPRArgRegs; ++i) {
-      Register VReg = MF.addLiveIn(GPRArgRegs[i], &AArch64::GPR64RegClass);
+      Register VReg = MF.addLiveIn(GPRArgRegs[i], AArch64::RegClass(AArch64::GPR64RegClassID));
       SDValue Val = DAG.getCopyFromReg(Chain, DL, VReg, MVT::i64);
       SDValue Store =
           DAG.getStore(Val.getValue(1), DL, Val, FIN,
@@ -8206,7 +8206,7 @@ void AArch64TargetLowering::saveVarArgRegisters(CCState &CCInfo,
       SDValue FIN = DAG.getFrameIndex(FPRIdx, PtrVT);
 
       for (unsigned i = FirstVariadicFPR; i < NumFPRArgRegs; ++i) {
-        Register VReg = MF.addLiveIn(FPRArgRegs[i], &AArch64::FPR128RegClass);
+        Register VReg = MF.addLiveIn(FPRArgRegs[i], AArch64::RegClass(AArch64::FPR128RegClassID));
         SDValue Val = DAG.getCopyFromReg(Chain, DL, VReg, MVT::f128);
 
         SDValue Store = DAG.getStore(Val.getValue(1), DL, Val, FIN,
@@ -8592,8 +8592,8 @@ void AArch64TargetLowering::AdjustInstrPostInstrSelection(MachineInstr &MI,
     for (unsigned I = MI.getNumOperands() - 1; I > 0; --I)
       if (MachineOperand &MO = MI.getOperand(I);
           MO.isReg() && MO.isImplicit() && MO.isDef() &&
-          (AArch64::GPR32RegClass.contains(MO.getReg()) ||
-           AArch64::GPR64RegClass.contains(MO.getReg())))
+          (AArch64::RegClass(AArch64::GPR32RegClassID)->contains(MO.getReg()) ||
+           AArch64::RegClass(AArch64::GPR64RegClassID)->contains(MO.getReg())))
         MI.removeOperand(I);
 
     // The SVE vector length can change when entering/leaving streaming mode.
@@ -8724,8 +8724,8 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
     auto HasSVERegLoc = [](CCValAssign &Loc) {
       if (!Loc.isRegLoc())
         return false;
-      return AArch64::ZPRRegClass.contains(Loc.getLocReg()) ||
-             AArch64::PPRRegClass.contains(Loc.getLocReg());
+      return AArch64::RegClass(AArch64::ZPRRegClassID)->contains(Loc.getLocReg()) ||
+             AArch64::RegClass(AArch64::PPRRegClassID)->contains(Loc.getLocReg());
     };
     if (any_of(RVLocs, HasSVERegLoc) || any_of(ArgLocs, HasSVERegLoc))
       CallConv = CallingConv::AArch64_SVE_VectorCall;
@@ -9541,9 +9541,9 @@ AArch64TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
   const MCPhysReg *I = TRI->getCalleeSavedRegsViaCopy(&MF);
   if (I) {
     for (; *I; ++I) {
-      if (AArch64::GPR64RegClass.contains(*I))
+      if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(*I))
         RetOps.push_back(DAG.getRegister(*I, MVT::i64));
-      else if (AArch64::FPR64RegClass.contains(*I))
+      else if (AArch64::RegClass(AArch64::FPR64RegClassID)->contains(*I))
         RetOps.push_back(DAG.getRegister(*I, MVT::getFloatingPointVT(64)));
       else
         llvm_unreachable("Unexpected register class in CSRsViaCopy!");
@@ -11369,7 +11369,7 @@ SDValue AArch64TargetLowering::LowerWin64_VASTART(SDValue Op,
     // With the Arm64EC ABI, we compute the address of the varargs save area
     // relative to x4. For a normal AArch64->AArch64 call, x4 == sp on entry,
     // but calls from an entry thunk can pass in a different address.
-    Register VReg = MF.addLiveIn(AArch64::X4, &AArch64::GPR64RegClass);
+    Register VReg = MF.addLiveIn(AArch64::X4, AArch64::RegClass(AArch64::GPR64RegClassID));
     SDValue Val = DAG.getCopyFromReg(DAG.getEntryNode(), DL, VReg, MVT::i64);
     uint64_t StackOffset;
     if (FuncInfo->getVarArgsGPRSize() > 0)
@@ -11656,7 +11656,7 @@ SDValue AArch64TargetLowering::LowerRETURNADDR(SDValue Op,
   } else {
     // Return LR, which contains the return address. Mark it an implicit
     // live-in.
-    Register Reg = MF.addLiveIn(AArch64::LR, &AArch64::GPR64RegClass);
+    Register Reg = MF.addLiveIn(AArch64::LR, AArch64::RegClass(AArch64::GPR64RegClassID));
     ReturnAddress = DAG.getCopyFromReg(DAG.getEntryNode(), DL, Reg, VT);
   }
 
@@ -11920,9 +11920,9 @@ parsePredicateRegAsConstraint(StringRef Constraint) {
     return std::nullopt;
 
   if (IsPredicateAsCount)
-    return std::make_pair(AArch64::PN0 + V, &AArch64::PNRRegClass);
+    return std::make_pair(AArch64::PN0 + V, AArch64::RegClass(AArch64::PNRRegClassID));
   else
-    return std::make_pair(AArch64::P0 + V, &AArch64::PPRRegClass);
+    return std::make_pair(AArch64::P0 + V, AArch64::RegClass(AArch64::PPRRegClassID));
 }
 
 static std::optional<PredicateConstraint>
@@ -11942,14 +11942,14 @@ getPredicateRegisterClass(PredicateConstraint Constraint, EVT VT) {
 
   switch (Constraint) {
   case PredicateConstraint::Uph:
-    return VT == MVT::aarch64svcount ? &AArch64::PNR_p8to15RegClass
-                                     : &AArch64::PPR_p8to15RegClass;
+    return AArch64::RegClass(VT == MVT::aarch64svcount ? AArch64::PNR_p8to15RegClassID
+                                     : AArch64::PPR_p8to15RegClassID);
   case PredicateConstraint::Upl:
-    return VT == MVT::aarch64svcount ? &AArch64::PNR_3bRegClass
-                                     : &AArch64::PPR_3bRegClass;
+    return AArch64::RegClass(VT == MVT::aarch64svcount ? AArch64::PNR_3bRegClassID
+                                     : AArch64::PPR_3bRegClassID);
   case PredicateConstraint::Upa:
-    return VT == MVT::aarch64svcount ? &AArch64::PNRRegClass
-                                     : &AArch64::PPRRegClass;
+    return AArch64::RegClass(VT == MVT::aarch64svcount ? AArch64::PNRRegClassID
+                                     : AArch64::PPRRegClassID);
   }
 
   llvm_unreachable("Missing PredicateConstraint!");
@@ -11972,9 +11972,9 @@ getReducedGprRegisterClass(ReducedGprConstraint Constraint, EVT VT) {
 
   switch (Constraint) {
   case ReducedGprConstraint::Uci:
-    return &AArch64::MatrixIndexGPR32_8_11RegClass;
+    return AArch64::RegClass(AArch64::MatrixIndexGPR32_8_11RegClassID);
   case ReducedGprConstraint::Ucj:
-    return &AArch64::MatrixIndexGPR32_12_15RegClass;
+    return AArch64::RegClass(AArch64::MatrixIndexGPR32_12_15RegClassID);
   }
 
   llvm_unreachable("Missing ReducedGprConstraint!");
@@ -12129,29 +12129,29 @@ AArch64TargetLowering::getRegForInlineAsmConstraint(
       if (VT.isScalableVector())
         return std::make_pair(0U, nullptr);
       if (Subtarget->hasLS64() && VT.getSizeInBits() == 512)
-        return std::make_pair(0U, &AArch64::GPR64x8ClassRegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::GPR64x8ClassRegClassID));
       if (VT.getFixedSizeInBits() == 64)
-        return std::make_pair(0U, &AArch64::GPR64commonRegClass);
-      return std::make_pair(0U, &AArch64::GPR32commonRegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::GPR64commonRegClassID));
+      return std::make_pair(0U, AArch64::RegClass(AArch64::GPR32commonRegClassID));
     case 'w': {
       if (!Subtarget->hasFPARMv8())
         break;
       if (VT.isScalableVector()) {
         if (VT.getVectorElementType() != MVT::i1)
-          return std::make_pair(0U, &AArch64::ZPRRegClass);
+          return std::make_pair(0U, AArch64::RegClass(AArch64::ZPRRegClassID));
         return std::make_pair(0U, nullptr);
       }
       if (VT == MVT::Other)
         break;
       uint64_t VTSize = VT.getFixedSizeInBits();
       if (VTSize == 16)
-        return std::make_pair(0U, &AArch64::FPR16RegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::FPR16RegClassID));
       if (VTSize == 32)
-        return std::make_pair(0U, &AArch64::FPR32RegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::FPR32RegClassID));
       if (VTSize == 64)
-        return std::make_pair(0U, &AArch64::FPR64RegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::FPR64RegClassID));
       if (VTSize == 128)
-        return std::make_pair(0U, &AArch64::FPR128RegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::FPR128RegClassID));
       break;
     }
     // The instructions that this constraint is designed for can
@@ -12160,15 +12160,15 @@ AArch64TargetLowering::getRegForInlineAsmConstraint(
       if (!Subtarget->hasFPARMv8())
         break;
       if (VT.isScalableVector())
-        return std::make_pair(0U, &AArch64::ZPR_4bRegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::ZPR_4bRegClassID));
       if (VT.getSizeInBits() == 128)
-        return std::make_pair(0U, &AArch64::FPR128_loRegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::FPR128_loRegClassID));
       break;
     case 'y':
       if (!Subtarget->hasFPARMv8())
         break;
       if (VT.isScalableVector())
-        return std::make_pair(0U, &AArch64::ZPR_3bRegClass);
+        return std::make_pair(0U, AArch64::RegClass(AArch64::ZPR_3bRegClassID));
       break;
     }
   } else {
@@ -12184,14 +12184,14 @@ AArch64TargetLowering::getRegForInlineAsmConstraint(
   }
   if (StringRef("{cc}").equals_insensitive(Constraint) ||
       parseConstraintCode(Constraint) != AArch64CC::Invalid)
-    return std::make_pair(unsigned(AArch64::NZCV), &AArch64::CCRRegClass);
+    return std::make_pair(unsigned(AArch64::NZCV), AArch64::RegClass(AArch64::CCRRegClassID));
 
   if (Constraint == "{za}") {
-    return std::make_pair(unsigned(AArch64::ZA), &AArch64::MPRRegClass);
+    return std::make_pair(unsigned(AArch64::ZA), AArch64::RegClass(AArch64::MPRRegClassID));
   }
 
   if (Constraint == "{zt0}") {
-    return std::make_pair(unsigned(AArch64::ZT0), &AArch64::ZTRRegClass);
+    return std::make_pair(unsigned(AArch64::ZT0), AArch64::RegClass(AArch64::ZTRRegClassID));
   }
 
   // Use the default implementation in TargetLowering to convert the register
@@ -12211,19 +12211,19 @@ AArch64TargetLowering::getRegForInlineAsmConstraint(
         // By default we'll emit v0-v31 for this unless there's a modifier where
         // we'll emit the correct register as well.
         if (VT != MVT::Other && VT.getSizeInBits() == 64) {
-          Res.first = AArch64::FPR64RegClass.getRegister(RegNo);
-          Res.second = &AArch64::FPR64RegClass;
+          Res.first = AArch64::RegClass(AArch64::FPR64RegClassID)->getRegister(RegNo);
+          Res.second = AArch64::RegClass(AArch64::FPR64RegClassID);
         } else {
-          Res.first = AArch64::FPR128RegClass.getRegister(RegNo);
-          Res.second = &AArch64::FPR128RegClass;
+          Res.first = AArch64::RegClass(AArch64::FPR128RegClassID)->getRegister(RegNo);
+          Res.second = AArch64::RegClass(AArch64::FPR128RegClassID);
         }
       }
     }
   }
 
   if (Res.second && !Subtarget->hasFPARMv8() &&
-      !AArch64::GPR32allRegClass.hasSubClassEq(Res.second) &&
-      !AArch64::GPR64allRegClass.hasSubClassEq(Res.second))
+      !AArch64::RegClass(AArch64::GPR32allRegClassID)->hasSubClassEq(Res.second) &&
+      !AArch64::RegClass(AArch64::GPR64allRegClassID)->hasSubClassEq(Res.second))
     return std::make_pair(0U, nullptr);
 
   return Res;
@@ -27732,10 +27732,10 @@ void AArch64TargetLowering::insertCopiesSplitCSR(
   MachineBasicBlock::iterator MBBI = Entry->begin();
   for (const MCPhysReg *I = IStart; *I; ++I) {
     const TargetRegisterClass *RC = nullptr;
-    if (AArch64::GPR64RegClass.contains(*I))
-      RC = &AArch64::GPR64RegClass;
-    else if (AArch64::FPR64RegClass.contains(*I))
-      RC = &AArch64::FPR64RegClass;
+    if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(*I))
+      RC = AArch64::RegClass(AArch64::GPR64RegClassID);
+    else if (AArch64::RegClass(AArch64::FPR64RegClassID)->contains(*I))
+      RC = AArch64::RegClass(AArch64::FPR64RegClassID);
     else
       llvm_unreachable("Unexpected register class in CSRsViaCopy!");
 

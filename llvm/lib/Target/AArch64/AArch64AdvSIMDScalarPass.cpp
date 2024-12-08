@@ -106,20 +106,20 @@ static bool isGPR64(unsigned Reg, unsigned SubReg,
   if (SubReg)
     return false;
   if (Register::isVirtualRegister(Reg))
-    return MRI->getRegClass(Reg)->hasSuperClassEq(&AArch64::GPR64RegClass);
-  return AArch64::GPR64RegClass.contains(Reg);
+    return MRI->getRegClass(Reg)->hasSuperClassEq(AArch64::RegClass(AArch64::GPR64RegClassID));
+  return AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Reg);
 }
 
 static bool isFPR64(unsigned Reg, unsigned SubReg,
                     const MachineRegisterInfo *MRI) {
   if (Register::isVirtualRegister(Reg))
-    return (MRI->getRegClass(Reg)->hasSuperClassEq(&AArch64::FPR64RegClass) &&
+    return (MRI->getRegClass(Reg)->hasSuperClassEq(AArch64::RegClass(AArch64::FPR64RegClassID)) &&
             SubReg == 0) ||
-           (MRI->getRegClass(Reg)->hasSuperClassEq(&AArch64::FPR128RegClass) &&
+           (MRI->getRegClass(Reg)->hasSuperClassEq(AArch64::RegClass(AArch64::FPR128RegClassID)) &&
             SubReg == AArch64::dsub);
   // Physical register references just check the register class directly.
-  return (AArch64::FPR64RegClass.contains(Reg) && SubReg == 0) ||
-         (AArch64::FPR128RegClass.contains(Reg) && SubReg == AArch64::dsub);
+  return (AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg) && SubReg == 0) ||
+         (AArch64::RegClass(AArch64::FPR128RegClassID)->contains(Reg) && SubReg == AArch64::dsub);
 }
 
 // getSrcFromCopy - Get the original source register for a GPR64 <--> FPR64
@@ -340,13 +340,13 @@ void AArch64AdvSIMDScalar::transformInstruction(MachineInstr &MI) {
   // copy.
   if (!Src0) {
     SubReg0 = 0;
-    Src0 = MRI->createVirtualRegister(&AArch64::FPR64RegClass);
+    Src0 = MRI->createVirtualRegister(AArch64::RegClass(AArch64::FPR64RegClassID));
     insertCopy(TII, MI, Src0, OrigSrc0, KillSrc0);
     KillSrc0 = true;
   }
   if (!Src1) {
     SubReg1 = 0;
-    Src1 = MRI->createVirtualRegister(&AArch64::FPR64RegClass);
+    Src1 = MRI->createVirtualRegister(AArch64::RegClass(AArch64::FPR64RegClassID));
     insertCopy(TII, MI, Src1, OrigSrc1, KillSrc1);
     KillSrc1 = true;
   }
@@ -354,7 +354,7 @@ void AArch64AdvSIMDScalar::transformInstruction(MachineInstr &MI) {
   // Create a vreg for the destination.
   // FIXME: No need to do this if the ultimate user expects an FPR64.
   // Check for that and avoid the copy if possible.
-  Register Dst = MRI->createVirtualRegister(&AArch64::FPR64RegClass);
+  Register Dst = MRI->createVirtualRegister(AArch64::RegClass(AArch64::FPR64RegClassID));
 
   // For now, all of the new instructions have the same simple three-register
   // form, so no need to special case based on what instruction we're

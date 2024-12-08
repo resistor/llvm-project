@@ -3764,7 +3764,7 @@ bool AMDGPUDAGToDAGISel::isVGPRImm(const SDNode * N) const {
     if (!RC || SIRI->isSGPRClass(RC))
       return false;
 
-    if (RC != &AMDGPU::VS_32RegClass && RC != &AMDGPU::VS_64RegClass) {
+    if (RC != AMDGPU::RegClass(AMDGPU::VS_32RegClassID) && RC != AMDGPU::RegClass(AMDGPU::VS_64RegClassID)) {
       AllUsesAcceptSReg = false;
       SDNode * User = *U;
       if (User->isMachineOpcode()) {
@@ -3776,8 +3776,8 @@ bool AMDGPUDAGToDAGISel::isVGPRImm(const SDNode * N) const {
           if (SII->findCommutedOpIndices(Desc, OpIdx, CommuteIdx1)) {
             unsigned CommutedOpNo = CommuteIdx1 - Desc.getNumDefs();
             const TargetRegisterClass *CommutedRC = getOperandRegClass(*U, CommutedOpNo);
-            if (CommutedRC == &AMDGPU::VS_32RegClass ||
-                CommutedRC == &AMDGPU::VS_64RegClass)
+            if (CommutedRC == AMDGPU::RegClass(AMDGPU::VS_32RegClassID) ||
+                CommutedRC == AMDGPU::RegClass(AMDGPU::VS_64RegClassID))
               AllUsesAcceptSReg = true;
           }
         }

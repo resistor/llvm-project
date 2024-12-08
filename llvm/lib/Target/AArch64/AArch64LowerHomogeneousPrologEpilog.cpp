@@ -201,8 +201,8 @@ static void emitStore(MachineFunction &MF, MachineBasicBlock &MBB,
                       int Offset, bool IsPreDec) {
   assert(Reg1 != AArch64::NoRegister);
   const bool IsPaired = Reg2 != AArch64::NoRegister;
-  bool IsFloat = AArch64::FPR64RegClass.contains(Reg1);
-  assert(!(IsFloat ^ AArch64::FPR64RegClass.contains(Reg2)));
+  bool IsFloat = AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg1);
+  assert(!(IsFloat ^ AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg2)));
   unsigned Opc;
   if (IsPreDec) {
     if (IsFloat)
@@ -242,8 +242,8 @@ static void emitLoad(MachineFunction &MF, MachineBasicBlock &MBB,
                      int Offset, bool IsPostDec) {
   assert(Reg1 != AArch64::NoRegister);
   const bool IsPaired = Reg2 != AArch64::NoRegister;
-  bool IsFloat = AArch64::FPR64RegClass.contains(Reg1);
-  assert(!(IsFloat ^ AArch64::FPR64RegClass.contains(Reg2)));
+  bool IsFloat = AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg1);
+  assert(!(IsFloat ^ AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg2)));
   unsigned Opc;
   if (IsPostDec) {
     if (IsFloat)

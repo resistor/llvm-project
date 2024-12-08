@@ -188,7 +188,7 @@ MachineInstr *R600VectorRegMerger::RebuildVector(
   DenseMap<Register, unsigned> UpdatedRegToChan = BaseRSI->RegToChan;
   std::vector<Register> UpdatedUndef = BaseRSI->UndefReg;
   for (const auto &It : RSI->RegToChan) {
-    Register DstReg = MRI->createVirtualRegister(&R600::R600_Reg128RegClass);
+    Register DstReg = MRI->createVirtualRegister(R600::RegClass(R600::R600_Reg128RegClassID));
     unsigned SubReg = It.first;
     unsigned Swizzle = It.second;
     unsigned Chan = getReassignedChan(RemapChan, Swizzle);

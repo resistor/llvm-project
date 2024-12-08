@@ -50,10 +50,10 @@ AArch64RegisterInfo::AArch64RegisterInfo(const Triple &TT)
 /// returned in \p RegToUseForCFI.
 bool AArch64RegisterInfo::regNeedsCFI(unsigned Reg,
                                       unsigned &RegToUseForCFI) const {
-  if (AArch64::PPRRegClass.contains(Reg))
+  if (AArch64::RegClass(AArch64::PPRRegClassID)->contains(Reg))
     return false;
 
-  if (AArch64::ZPRRegClass.contains(Reg)) {
+  if (AArch64::RegClass(AArch64::ZPRRegClassID)->contains(Reg)) {
     RegToUseForCFI = getSubReg(Reg, AArch64::dsub);
     for (int I = 0; CSR_AArch64_AAPCS_SaveList[I]; ++I) {
       if (CSR_AArch64_AAPCS_SaveList[I] == RegToUseForCFI)
@@ -217,9 +217,9 @@ void AArch64RegisterInfo::UpdateCustomCalleeSavedRegs(
   for (const MCPhysReg *I = CSRs; *I; ++I)
     UpdatedCSRs.push_back(*I);
 
-  for (size_t i = 0; i < AArch64::GPR64commonRegClass.getNumRegs(); ++i) {
+  for (size_t i = 0; i < AArch64::RegClass(AArch64::GPR64commonRegClassID)->getNumRegs(); ++i) {
     if (MF.getSubtarget<AArch64Subtarget>().isXRegCustomCalleeSaved(i)) {
-      UpdatedCSRs.push_back(AArch64::GPR64commonRegClass.getRegister(i));
+      UpdatedCSRs.push_back(AArch64::RegClass(AArch64::GPR64commonRegClassID)->getRegister(i));
     }
   }
   // Register lists are zero-terminated.
@@ -231,10 +231,10 @@ const TargetRegisterClass *
 AArch64RegisterInfo::getSubClassWithSubReg(const TargetRegisterClass *RC,
                                        unsigned Idx) const {
   // edge case for GPR/FPR register classes
-  if (RC == &AArch64::GPR32allRegClass && Idx == AArch64::hsub)
-    return &AArch64::FPR32RegClass;
-  else if (RC == &AArch64::GPR64allRegClass && Idx == AArch64::hsub)
-    return &AArch64::FPR64RegClass;
+  if (RC == AArch64::RegClass(AArch64::GPR32allRegClassID) && Idx == AArch64::hsub)
+    return AArch64::RegClass(AArch64::FPR32RegClassID);
+  else if (RC == AArch64::RegClass(AArch64::GPR64allRegClassID) && Idx == AArch64::hsub)
+    return AArch64::RegClass(AArch64::FPR64RegClassID);
 
   // Forward to TableGen's default version.
   return AArch64GenRegisterInfo::getSubClassWithSubReg(RC, Idx);
@@ -350,10 +350,10 @@ void AArch64RegisterInfo::UpdateCustomCallPreservedMask(MachineFunction &MF,
   unsigned RegMaskSize = MachineOperand::getRegMaskSize(getNumRegs());
   memcpy(UpdatedMask, *Mask, sizeof(UpdatedMask[0]) * RegMaskSize);
 
-  for (size_t i = 0; i < AArch64::GPR64commonRegClass.getNumRegs(); ++i) {
+  for (size_t i = 0; i < AArch64::RegClass(AArch64::GPR64commonRegClassID)->getNumRegs(); ++i) {
     if (MF.getSubtarget<AArch64Subtarget>().isXRegCustomCalleeSaved(i)) {
       for (MCPhysReg SubReg :
-           subregs_inclusive(AArch64::GPR64commonRegClass.getRegister(i))) {
+           subregs_inclusive(AArch64::RegClass(AArch64::GPR64commonRegClassID)->getRegister(i))) {
         // See TargetRegisterInfo::getCallPreservedMask for how to interpret the
         // register mask.
         UpdatedMask[SubReg / 32] |= 1u << (SubReg % 32);
@@ -447,9 +447,9 @@ AArch64RegisterInfo::getStrictlyReservedRegs(const MachineFunction &MF) const {
       markSuperRegs(Reserved, i);
   }
 
-  for (size_t i = 0; i < AArch64::GPR32commonRegClass.getNumRegs(); ++i) {
+  for (size_t i = 0; i < AArch64::RegClass(AArch64::GPR32commonRegClassID)->getNumRegs(); ++i) {
     if (MF.getSubtarget<AArch64Subtarget>().isXRegisterReserved(i))
-      markSuperRegs(Reserved, AArch64::GPR32commonRegClass.getRegister(i));
+      markSuperRegs(Reserved, AArch64::RegClass(AArch64::GPR32commonRegClassID)->getRegister(i));
   }
 
   if (hasBasePointer(MF))
@@ -520,9 +520,9 @@ AArch64RegisterInfo::getStrictlyReservedRegs(const MachineFunction &MF) const {
 BitVector
 AArch64RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
-  for (size_t i = 0; i < AArch64::GPR32commonRegClass.getNumRegs(); ++i) {
+  for (size_t i = 0; i < AArch64::RegClass(AArch64::GPR32commonRegClassID)->getNumRegs(); ++i) {
     if (MF.getSubtarget<AArch64Subtarget>().isXRegisterReservedForRA(i))
-      markSuperRegs(Reserved, AArch64::GPR32commonRegClass.getRegister(i));
+      markSuperRegs(Reserved, AArch64::RegClass(AArch64::GPR32commonRegClassID)->getRegister(i));
   }
 
   if (MF.getSubtarget<AArch64Subtarget>().isLRReservedForRA()) {
@@ -556,7 +556,7 @@ bool AArch64RegisterInfo::isStrictlyReservedReg(const MachineFunction &MF,
 }
 
 bool AArch64RegisterInfo::isAnyArgRegReserved(const MachineFunction &MF) const {
-  return llvm::any_of(*AArch64::GPR64argRegClass.MC, [this, &MF](MCPhysReg r) {
+  return llvm::any_of(*AArch64::RegClass(AArch64::GPR64argRegClassID)->MC, [this, &MF](MCPhysReg r) {
     return isStrictlyReservedReg(MF, r);
   });
 }
@@ -587,13 +587,13 @@ bool AArch64RegisterInfo::isAsmClobberable(const MachineFunction &MF,
 const TargetRegisterClass *
 AArch64RegisterInfo::getPointerRegClass(const MachineFunction &MF,
                                       unsigned Kind) const {
-  return &AArch64::GPR64spRegClass;
+  return AArch64::RegClass(AArch64::GPR64spRegClassID);
 }
 
 const TargetRegisterClass *
 AArch64RegisterInfo::getCrossCopyRegClass(const TargetRegisterClass *RC) const {
-  if (RC == &AArch64::CCRRegClass)
-    return &AArch64::GPR64RegClass; // Only MSR & MRS copy NZCV.
+  if (RC == AArch64::RegClass(AArch64::CCRRegClassID))
+    return AArch64::RegClass(AArch64::GPR64RegClassID); // Only MSR & MRS copy NZCV.
   return RC;
 }
 
@@ -854,7 +854,7 @@ AArch64RegisterInfo::materializeFrameBaseRegister(MachineBasicBlock *MBB,
       MF.getSubtarget<AArch64Subtarget>().getInstrInfo();
   const MCInstrDesc &MCID = TII->get(AArch64::ADDXri);
   MachineRegisterInfo &MRI = MBB->getParent()->getRegInfo();
-  Register BaseReg = MRI.createVirtualRegister(&AArch64::GPR64spRegClass);
+  Register BaseReg = MRI.createVirtualRegister(AArch64::RegClass(AArch64::GPR64spRegClassID));
   MRI.constrainRegClass(BaseReg, TII->getRegClass(MCID, 0, this, MF));
   unsigned Shifter = AArch64_AM::getShifterImm(AArch64_AM::LSL, 0);
 
@@ -907,7 +907,7 @@ createScratchRegisterForInstruction(MachineInstr &MI, unsigned FIOperandNum,
     MI.tieOperands(1, 3);
   } else {
     ScratchReg =
-        MI.getMF()->getRegInfo().createVirtualRegister(&AArch64::GPR64RegClass);
+        MI.getMF()->getRegInfo().createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
     MI.getOperand(FIOperandNum)
         .ChangeToRegister(ScratchReg, false, false, true);
   }
@@ -999,7 +999,7 @@ bool AArch64RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
       Offset = TFI->resolveFrameIndexReference(
           MF, FrameIndex, FrameReg, /*PreferFP=*/false, /*ForSimm=*/true);
       Register ScratchReg =
-          MF.getRegInfo().createVirtualRegister(&AArch64::GPR64RegClass);
+          MF.getRegInfo().createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
       emitFrameOffset(MBB, II, MI.getDebugLoc(), ScratchReg, FrameReg, Offset,
                       TII);
       BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(AArch64::LDG), ScratchReg)
@@ -1129,8 +1129,8 @@ bool AArch64RegisterInfo::shouldCoalesce(
   // COALESCER_BARRIER pseudos. These are 'nops' in practice, but they exist to
   // instruct the coalescer to avoid coalescing the copy.
   if (MI->isCopy() && SubReg != DstSubReg &&
-      (AArch64::ZPRRegClass.hasSubClassEq(DstRC) ||
-       AArch64::ZPRRegClass.hasSubClassEq(SrcRC))) {
+      (AArch64::RegClass(AArch64::ZPRRegClassID)->hasSubClassEq(DstRC) ||
+       AArch64::RegClass(AArch64::ZPRRegClassID)->hasSubClassEq(SrcRC))) {
     unsigned SrcReg = MI->getOperand(1).getReg();
     if (any_of(MRI.def_instructions(SrcReg), IsCoalescerBarrier))
       return false;

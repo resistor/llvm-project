@@ -454,19 +454,19 @@ static void allocateHSAUserSGPRs(CCState &CCInfo,
   const GCNUserSGPRUsageInfo &UserSGPRInfo = Info.getUserSGPRInfo();
   if (UserSGPRInfo.hasPrivateSegmentBuffer()) {
     Register PrivateSegmentBufferReg = Info.addPrivateSegmentBuffer(TRI);
-    MF.addLiveIn(PrivateSegmentBufferReg, &AMDGPU::SGPR_128RegClass);
+    MF.addLiveIn(PrivateSegmentBufferReg, AMDGPU::RegClass(AMDGPU::SGPR_128RegClassID));
     CCInfo.AllocateReg(PrivateSegmentBufferReg);
   }
 
   if (UserSGPRInfo.hasDispatchPtr()) {
     Register DispatchPtrReg = Info.addDispatchPtr(TRI);
-    MF.addLiveIn(DispatchPtrReg, &AMDGPU::SGPR_64RegClass);
+    MF.addLiveIn(DispatchPtrReg, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
     CCInfo.AllocateReg(DispatchPtrReg);
   }
 
   if (UserSGPRInfo.hasQueuePtr()) {
     Register QueuePtrReg = Info.addQueuePtr(TRI);
-    MF.addLiveIn(QueuePtrReg, &AMDGPU::SGPR_64RegClass);
+    MF.addLiveIn(QueuePtrReg, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
     CCInfo.AllocateReg(QueuePtrReg);
   }
 
@@ -483,13 +483,13 @@ static void allocateHSAUserSGPRs(CCState &CCInfo,
 
   if (UserSGPRInfo.hasDispatchID()) {
     Register DispatchIDReg = Info.addDispatchID(TRI);
-    MF.addLiveIn(DispatchIDReg, &AMDGPU::SGPR_64RegClass);
+    MF.addLiveIn(DispatchIDReg, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
     CCInfo.AllocateReg(DispatchIDReg);
   }
 
   if (UserSGPRInfo.hasFlatScratchInit()) {
     Register FlatScratchInitReg = Info.addFlatScratchInit(TRI);
-    MF.addLiveIn(FlatScratchInitReg, &AMDGPU::SGPR_64RegClass);
+    MF.addLiveIn(FlatScratchInitReg, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
     CCInfo.AllocateReg(FlatScratchInitReg);
   }
 
@@ -596,14 +596,14 @@ bool AMDGPUCallLowering::lowerFormalArguments(
 
   if (UserSGPRInfo.hasImplicitBufferPtr()) {
     Register ImplicitBufferPtrReg = Info->addImplicitBufferPtr(*TRI);
-    MF.addLiveIn(ImplicitBufferPtrReg, &AMDGPU::SGPR_64RegClass);
+    MF.addLiveIn(ImplicitBufferPtrReg, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
     CCInfo.AllocateReg(ImplicitBufferPtrReg);
   }
 
   // FIXME: This probably isn't defined for mesa
   if (UserSGPRInfo.hasFlatScratchInit() && !Subtarget.isAmdPalOS()) {
     Register FlatScratchInitReg = Info->addFlatScratchInit(*TRI);
-    MF.addLiveIn(FlatScratchInitReg, &AMDGPU::SGPR_64RegClass);
+    MF.addLiveIn(FlatScratchInitReg, AMDGPU::RegClass(AMDGPU::SGPR_64RegClassID));
     CCInfo.AllocateReg(FlatScratchInitReg);
   }
 
@@ -920,7 +920,7 @@ bool AMDGPUCallLowering::passSpecialInputs(MachineIRBuilder &MIRBuilder,
         IncomingArgX ? *IncomingArgX :
         IncomingArgY ? *IncomingArgY : *IncomingArgZ, ~0u);
       LI->loadInputValue(InputReg, MIRBuilder, &IncomingArg,
-                         &AMDGPU::VGPR_32RegClass, S32);
+                         AMDGPU::RegClass(AMDGPU::VGPR_32RegClassID), S32);
     }
   }
 

@@ -123,7 +123,7 @@ struct LDTLSCleanup : public MachineFunctionPass {
 
     // Create a virtual register for the TLS base address.
     MachineRegisterInfo &RegInfo = MF->getRegInfo();
-    *TLSBaseAddrReg = RegInfo.createVirtualRegister(&AArch64::GPR64RegClass);
+    *TLSBaseAddrReg = RegInfo.createVirtualRegister(&AArch64::RegisterClasses[AArch64::GPR64RegClassID]);
 
     // Insert a copy from X0 to TLSBaseAddrReg for later.
     MachineInstr *Copy =

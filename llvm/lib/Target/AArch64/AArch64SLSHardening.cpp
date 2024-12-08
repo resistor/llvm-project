@@ -197,7 +197,7 @@ static bool isBLR(const MachineInstr &MI) {
 }
 
 unsigned ThunksSet::indexOfXReg(Register Reg) {
-  assert(AArch64::GPR64RegClass.contains(Reg));
+  assert(AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Reg));
   assert(Reg != AArch64::X16 && Reg != AArch64::X17 && Reg != AArch64::LR);
 
   // Most Xn registers have consecutive ids, except for FP and XZR.
@@ -208,14 +208,14 @@ unsigned ThunksSet::indexOfXReg(Register Reg) {
     Result = 31;
 
   assert(Result < NumXRegisters && "Internal register numbering changed");
-  assert(AArch64::GPR64RegClass.getRegister(Result).id() == Reg &&
+  assert(AArch64::RegClass(AArch64::GPR64RegClassID)->getRegister(Result).id() == Reg &&
          "Internal register numbering changed");
 
   return Result;
 }
 
 Register ThunksSet::xRegByIndex(unsigned N) {
-  return AArch64::GPR64RegClass.getRegister(N);
+  return AArch64::RegClass(AArch64::GPR64RegClassID)->getRegister(N);
 }
 
 static void insertSpeculationBarrier(const AArch64Subtarget *ST,

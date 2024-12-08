@@ -218,9 +218,9 @@ bool AArch64PostSelectOptimize::foldCopyDup(MachineInstr &MI) {
     return true;
   };
 
-  return TryMatchDUP(&AArch64::GPR32RegClass, &AArch64::FPR32RegClass,
+  return TryMatchDUP(AArch64::RegClass(AArch64::GPR32RegClassID), AArch64::RegClass(AArch64::FPR32RegClassID),
                      AArch64::DUPi32, AArch64::UMOVvi32) ||
-         TryMatchDUP(&AArch64::GPR64RegClass, &AArch64::FPR64RegClass,
+         TryMatchDUP(AArch64::RegClass(AArch64::GPR64RegClassID), AArch64::RegClass(AArch64::FPR64RegClassID),
                      AArch64::DUPi64, AArch64::UMOVvi64);
 }
 

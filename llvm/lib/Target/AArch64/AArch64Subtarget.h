@@ -220,7 +220,7 @@ public:
   bool isXRegisterReserved(size_t i) const { return ReserveXRegister[i]; }
   bool isXRegisterReservedForRA(size_t i) const { return ReserveXRegisterForRA[i]; }
   unsigned getNumXRegisterReserved() const {
-    BitVector AllReservedX(AArch64::GPR64commonRegClass.getNumRegs());
+    BitVector AllReservedX(AArch64::RegClass(AArch64::GPR64commonRegClassID)->getNumRegs());
     AllReservedX |= ReserveXRegister;
     AllReservedX |= ReserveXRegisterForRA;
     return AllReservedX.count();

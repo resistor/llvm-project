@@ -262,13 +262,13 @@ bool AArch64MIPeepholeOpt::visitORR(MachineInstr &MI) {
 
     // A COPY from an FPR will become a FMOVSWr, so do so now so that we know
     // that the upper bits are zero.
-    if (RC != &AArch64::FPR32RegClass &&
-        ((RC != &AArch64::FPR64RegClass && RC != &AArch64::FPR128RegClass) ||
+    if (RC != AArch64::RegClass(AArch64::FPR32RegClassID) &&
+        ((RC != AArch64::RegClass(AArch64::FPR64RegClassID) && RC != AArch64::RegClass(AArch64::FPR128RegClassID)) ||
          SrcMI->getOperand(1).getSubReg() != AArch64::ssub))
       return false;
     Register CpySrc = SrcMI->getOperand(1).getReg();
     if (SrcMI->getOperand(1).getSubReg() == AArch64::ssub) {
-      CpySrc = MRI->createVirtualRegister(&AArch64::FPR32RegClass);
+      CpySrc = MRI->createVirtualRegister(AArch64::RegClass(AArch64::FPR32RegClassID));
       BuildMI(*SrcMI->getParent(), SrcMI, SrcMI->getDebugLoc(),
               TII->get(TargetOpcode::COPY), CpySrc)
           .add(SrcMI->getOperand(1));
@@ -339,7 +339,7 @@ bool AArch64MIPeepholeOpt::visitINSERT(MachineInstr &MI) {
   // real AArch64 instruction and if it is not, do not process the opcode
   // conservatively.
   if ((SrcMI->getOpcode() <= TargetOpcode::GENERIC_OP_END) ||
-      !AArch64::GPR64allRegClass.hasSubClassEq(RC))
+      !AArch64::RegClass(AArch64::GPR64allRegClassID)->hasSubClassEq(RC))
     return false;
 
   // Build a SUBREG_TO_REG instruction
@@ -617,7 +617,7 @@ bool AArch64MIPeepholeOpt::visitINSviGPR(MachineInstr &MI, unsigned Opc) {
       return false;
 
     if (MRI->getRegClass(SrcMI->getOperand(1).getReg()) ==
-        &AArch64::FPR128RegClass) {
+        AArch64::RegClass(AArch64::FPR128RegClassID)) {
       break;
     }
     SrcMI = MRI->getUniqueVRegDef(SrcMI->getOperand(1).getReg());
@@ -645,7 +645,7 @@ static bool is64bitDefwithZeroHigh64bit(MachineInstr *MI,
   if (!MI->getOperand(0).isReg() || !MI->getOperand(0).isDef())
     return false;
   const TargetRegisterClass *RC = MRI->getRegClass(MI->getOperand(0).getReg());
-  if (RC != &AArch64::FPR64RegClass)
+  if (RC != AArch64::RegClass(AArch64::FPR64RegClassID))
     return false;
   return MI->getOpcode() > TargetOpcode::GENERIC_OP_END;
 }

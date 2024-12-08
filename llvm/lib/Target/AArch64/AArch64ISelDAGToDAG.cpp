@@ -4118,7 +4118,7 @@ bool AArch64DAGToDAGISel::tryWriteRegister(SDNode *N) {
     // higher half always into the odd supreg.
     SDNode *Pair = CurDAG->getMachineNode(
         TargetOpcode::REG_SEQUENCE, DL, MVT::Untyped /* XSeqPair */,
-        {CurDAG->getTargetConstant(AArch64::XSeqPairsClassRegClass.getID(), DL,
+        {CurDAG->getTargetConstant(AArch64::XSeqPairsClassRegClassID, DL,
                                    MVT::i32),
          N->getOperand(2),
          CurDAG->getTargetConstant(AArch64::sube64, DL, MVT::i32),

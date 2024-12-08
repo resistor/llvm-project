@@ -303,7 +303,7 @@ bool AArch64SpeculationHardening::instrumentControlFlow(
     // sure if that would actually result in a big performance difference
     // though. Maybe RegisterScavenger::findSurvivorBackwards has some logic
     // already to do this - but it's unclear if that could easily be used here.
-    Register TmpReg = RS.FindUnusedReg(&AArch64::GPR64commonRegClass);
+    Register TmpReg = RS.FindUnusedReg(AArch64::RegClass(AArch64::GPR64commonRegClassID));
     LLVM_DEBUG(dbgs() << "RS finds "
                       << ((TmpReg == 0) ? "no register " : "register ");
                if (TmpReg != 0) dbgs() << printReg(TmpReg, TRI) << " ";
@@ -429,8 +429,8 @@ bool AArch64SpeculationHardening::functionUsesHardeningRegister(
 bool AArch64SpeculationHardening::makeGPRSpeculationSafe(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI, MachineInstr &MI,
     unsigned Reg) {
-  assert(AArch64::GPR32allRegClass.contains(Reg) ||
-         AArch64::GPR64allRegClass.contains(Reg));
+  assert(AArch64::RegClass(AArch64::GPR32allRegClassID)->contains(Reg) ||
+         AArch64::RegClass(AArch64::GPR64allRegClassID)->contains(Reg));
 
   // Loads cannot directly load a value into the SP (nor WSP).
   // Therefore, if Reg is SP or WSP, it is because the instruction loads from
@@ -444,7 +444,7 @@ bool AArch64SpeculationHardening::makeGPRSpeculationSafe(
   if (RegsAlreadyMasked[Reg])
     return false;
 
-  const bool Is64Bit = AArch64::GPR64allRegClass.contains(Reg);
+  const bool Is64Bit = AArch64::RegClass(AArch64::GPR64allRegClassID)->contains(Reg);
   LLVM_DEBUG(dbgs() << "About to harden register : " << Reg << "\n");
   BuildMI(MBB, MBBI, MI.getDebugLoc(),
           TII->get(Is64Bit ? AArch64::SpeculationSafeValueX
@@ -481,8 +481,8 @@ bool AArch64SpeculationHardening::slhLoads(MachineBasicBlock &MBB) {
     // easy to do efficiently on GPR registers, so for loads into non-GPR
     // registers (e.g. floating point loads), mask the address loaded from.
     bool AllDefsAreGPR = llvm::all_of(MI.defs(), [&](MachineOperand &Op) {
-      return Op.isReg() && (AArch64::GPR32allRegClass.contains(Op.getReg()) ||
-                            AArch64::GPR64allRegClass.contains(Op.getReg()));
+      return Op.isReg() && (AArch64::RegClass(AArch64::GPR32allRegClassID)->contains(Op.getReg()) ||
+                            AArch64::RegClass(AArch64::GPR64allRegClassID)->contains(Op.getReg()));
     });
     // FIXME: it might be a worthwhile optimization to not mask loaded
     // values if all the registers involved in address calculation are already
@@ -532,8 +532,8 @@ bool AArch64SpeculationHardening::slhLoads(MachineBasicBlock &MBB) {
         // AArch64 load instructions only use GPR registers to perform the
         // address calculation. FIXME: However that might change once we can
         // produce SVE gather instructions.
-        if (!(AArch64::GPR32allRegClass.contains(Reg) ||
-              AArch64::GPR64allRegClass.contains(Reg)))
+        if (!(AArch64::RegClass(AArch64::GPR32allRegClassID)->contains(Reg) ||
+              AArch64::RegClass(AArch64::GPR64allRegClassID)->contains(Reg)))
           continue;
         Modified |= makeGPRSpeculationSafe(MBB, MBBI, MI, Reg);
       }

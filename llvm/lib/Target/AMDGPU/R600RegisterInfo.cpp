@@ -86,7 +86,7 @@ const TargetRegisterClass * R600RegisterInfo::getCFGStructurizerRegClass(
                                                                    MVT VT) const {
   switch(VT.SimpleTy) {
   default:
-  case MVT::i32: return &R600::R600_TReg32RegClass;
+  case MVT::i32: return R600::RegClass(R600::R600_TReg32RegClassID);
   }
 }
 

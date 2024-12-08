@@ -118,13 +118,13 @@ static bool isSVERegOp(const TargetRegisterInfo &TRI,
   Register R = MO.getReg();
   if (R.isPhysical())
     return llvm::any_of(TRI.subregs_inclusive(R), [](const MCPhysReg &SR) {
-      return AArch64::ZPRRegClass.contains(SR) ||
-             AArch64::PPRRegClass.contains(SR);
+      return AArch64::RegClass(AArch64::ZPRRegClassID)->contains(SR) ||
+             AArch64::RegClass(AArch64::PPRRegClassID)->contains(SR);
     });
 
   const TargetRegisterClass *RC = MRI.getRegClass(R);
-  return TRI.getCommonSubClass(&AArch64::ZPRRegClass, RC) ||
-         TRI.getCommonSubClass(&AArch64::PPRRegClass, RC);
+  return TRI.getCommonSubClass(AArch64::RegClass(AArch64::ZPRRegClassID), RC) ||
+         TRI.getCommonSubClass(AArch64::RegClass(AArch64::PPRRegClassID), RC);
 }
 
 bool SMEPeepholeOpt::optimizeStartStopPairs(

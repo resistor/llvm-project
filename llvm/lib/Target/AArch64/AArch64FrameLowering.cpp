@@ -372,7 +372,7 @@ bool AArch64FrameLowering::homogeneousPrologEpilog(
         return false;
       break;
     }
-    if (AArch64::GPR64RegClass.contains(Reg))
+    if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Reg))
       ++NumGPRs;
   }
 
@@ -572,7 +572,7 @@ MachineBasicBlock::iterator AArch64FrameLowering::eliminateCallFramePseudoInstr(
         assert(MFI.hasVarSizedObjects() &&
                "non-reserved call frame without var sized objects?");
         Register ScratchReg =
-            MF.getRegInfo().createVirtualRegister(&AArch64::GPR64RegClass);
+            MF.getRegInfo().createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
         inlineStackProbeFixed(I, ScratchReg, -Amount, StackOffset::get(0, 0));
       } else {
         emitFrameOffset(MBB, I, DL, AArch64::SP, AArch64::SP,
@@ -1086,7 +1086,7 @@ static Register findScratchNonCalleeSaveRegister(MachineBasicBlock *MBB) {
   if (LiveRegs.available(MRI, AArch64::X9))
     return AArch64::X9;
 
-  for (unsigned Reg : AArch64::GPR64RegClass) {
+  for (unsigned Reg :*AArch64::RegClass(AArch64::GPR64RegClassID)) {
     if (LiveRegs.available(MRI, Reg))
       return Reg;
   }
@@ -3023,15 +3023,15 @@ static void computeCalleeSaveRegisterPairs(
     RegPairInfo RPI;
     RPI.Reg1 = CSI[i].getReg();
 
-    if (AArch64::GPR64RegClass.contains(RPI.Reg1))
+    if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(RPI.Reg1))
       RPI.Type = RegPairInfo::GPR;
-    else if (AArch64::FPR64RegClass.contains(RPI.Reg1))
+    else if (AArch64::RegClass(AArch64::FPR64RegClassID)->contains(RPI.Reg1))
       RPI.Type = RegPairInfo::FPR64;
-    else if (AArch64::FPR128RegClass.contains(RPI.Reg1))
+    else if (AArch64::RegClass(AArch64::FPR128RegClassID)->contains(RPI.Reg1))
       RPI.Type = RegPairInfo::FPR128;
-    else if (AArch64::ZPRRegClass.contains(RPI.Reg1))
+    else if (AArch64::RegClass(AArch64::ZPRRegClassID)->contains(RPI.Reg1))
       RPI.Type = RegPairInfo::ZPR;
-    else if (AArch64::PPRRegClass.contains(RPI.Reg1))
+    else if (AArch64::RegClass(AArch64::PPRRegClassID)->contains(RPI.Reg1))
       RPI.Type = RegPairInfo::PPR;
     else if (RPI.Reg1 == AArch64::VG)
       RPI.Type = RegPairInfo::VG;
@@ -3052,20 +3052,20 @@ static void computeCalleeSaveRegisterPairs(
       bool IsFirst = i == FirstReg;
       switch (RPI.Type) {
       case RegPairInfo::GPR:
-        if (AArch64::GPR64RegClass.contains(NextReg) &&
+        if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(NextReg) &&
             !invalidateRegisterPairing(RPI.Reg1, NextReg, IsWindows,
                                        NeedsWinCFI, NeedsFrameRecord, IsFirst,
                                        TRI))
           RPI.Reg2 = NextReg;
         break;
       case RegPairInfo::FPR64:
-        if (AArch64::FPR64RegClass.contains(NextReg) &&
+        if (AArch64::RegClass(AArch64::FPR64RegClassID)->contains(NextReg) &&
             !invalidateWindowsRegisterPairing(RPI.Reg1, NextReg, NeedsWinCFI,
                                               IsFirst, TRI))
           RPI.Reg2 = NextReg;
         break;
       case RegPairInfo::FPR128:
-        if (AArch64::FPR128RegClass.contains(NextReg))
+        if (AArch64::RegClass(AArch64::FPR128RegClassID)->contains(NextReg))
           RPI.Reg2 = NextReg;
         break;
       case RegPairInfo::PPR:
@@ -3646,10 +3646,10 @@ void AArch64FrameLowering::determineStackHazardSlot(
   // Add a hazard slot if there are any CSR FPR registers, or are any fp-only
   // stack objects.
   bool HasFPRCSRs = any_of(SavedRegs.set_bits(), [](unsigned Reg) {
-    return AArch64::FPR64RegClass.contains(Reg) ||
-           AArch64::FPR128RegClass.contains(Reg) ||
-           AArch64::ZPRRegClass.contains(Reg) ||
-           AArch64::PPRRegClass.contains(Reg);
+    return AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg) ||
+           AArch64::RegClass(AArch64::FPR128RegClassID)->contains(Reg) ||
+           AArch64::RegClass(AArch64::ZPRRegClassID)->contains(Reg) ||
+           AArch64::RegClass(AArch64::PPRRegClassID)->contains(Reg);
   });
   bool HasFPRStackObjects = false;
   if (!HasFPRCSRs) {
@@ -3714,9 +3714,9 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
 
     bool RegUsed = SavedRegs.test(Reg);
     unsigned PairedReg = AArch64::NoRegister;
-    const bool RegIsGPR64 = AArch64::GPR64RegClass.contains(Reg);
-    if (RegIsGPR64 || AArch64::FPR64RegClass.contains(Reg) ||
-        AArch64::FPR128RegClass.contains(Reg)) {
+    const bool RegIsGPR64 = AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Reg);
+    if (RegIsGPR64 || AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg) ||
+        AArch64::RegClass(AArch64::FPR128RegClassID)->contains(Reg)) {
       // Compensate for odd numbers of GP CSRs.
       // For now, all the known cases of odd number of CSRs are of GPRs.
       if (HasUnpairedGPR64)
@@ -3729,17 +3729,17 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
     // and there are an odd number of GP CSRs at the same time (CSRegs),
     // PairedReg could be in a different register class from Reg, which would
     // lead to a FPR (usually D8) accidentally being marked saved.
-    if (RegIsGPR64 && !AArch64::GPR64RegClass.contains(PairedReg)) {
+    if (RegIsGPR64 && !AArch64::RegClass(AArch64::GPR64RegClassID)->contains(PairedReg)) {
       PairedReg = AArch64::NoRegister;
       HasUnpairedGPR64 = true;
     }
     assert(PairedReg == AArch64::NoRegister ||
-           AArch64::GPR64RegClass.contains(Reg, PairedReg) ||
-           AArch64::FPR64RegClass.contains(Reg, PairedReg) ||
-           AArch64::FPR128RegClass.contains(Reg, PairedReg));
+           AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Reg, PairedReg) ||
+           AArch64::RegClass(AArch64::FPR64RegClassID)->contains(Reg, PairedReg) ||
+           AArch64::RegClass(AArch64::FPR128RegClassID)->contains(Reg, PairedReg));
 
     if (!RegUsed) {
-      if (AArch64::GPR64RegClass.contains(Reg) &&
+      if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Reg) &&
           !RegInfo->isReservedReg(MF, Reg)) {
         UnspilledCSGPR = Reg;
         UnspilledCSGPRPaired = PairedReg;
@@ -3753,12 +3753,12 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
     if (producePairRegisters(MF) && PairedReg != AArch64::NoRegister &&
         !SavedRegs.test(PairedReg)) {
       SavedRegs.set(PairedReg);
-      if (AArch64::GPR64RegClass.contains(PairedReg) &&
+      if (AArch64::RegClass(AArch64::GPR64RegClassID)->contains(PairedReg) &&
           !RegInfo->isReservedReg(MF, PairedReg))
         ExtraCSSpill = PairedReg;
     }
     // Check if there is a pair of ZRegs, so it can select PReg for spill/fill
-    HasPairZReg |= (AArch64::ZPRRegClass.contains(Reg, CSRegs[i ^ 1]) &&
+    HasPairZReg |= (AArch64::RegClass(AArch64::ZPRRegClassID)->contains(Reg, CSRegs[i ^ 1]) &&
                     SavedRegs.test(CSRegs[i ^ 1]));
   }
 
@@ -3798,8 +3798,8 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
   const MachineRegisterInfo &MRI = MF.getRegInfo();
   for (unsigned Reg : SavedRegs.set_bits()) {
     auto RegSize = TRI->getRegSizeInBits(Reg, MRI) / 8;
-    if (AArch64::PPRRegClass.contains(Reg) ||
-        AArch64::ZPRRegClass.contains(Reg))
+    if (AArch64::RegClass(AArch64::PPRRegClassID)->contains(Reg) ||
+        AArch64::RegClass(AArch64::ZPRRegClassID)->contains(Reg))
       SVECSStackSize += RegSize;
     else
       CSStackSize += RegSize;
@@ -3899,7 +3899,7 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
     // an emergency spill slot.
     if (!ExtraCSSpill || MF.getRegInfo().isPhysRegUsed(ExtraCSSpill)) {
       const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
-      const TargetRegisterClass &RC = AArch64::GPR64RegClass;
+      const TargetRegisterClass &RC = *AArch64::RegClass(AArch64::GPR64RegClassID);
       unsigned Size = TRI->getSpillSize(RC);
       Align Alignment = TRI->getSpillAlign(RC);
       int FI = MFI.CreateStackObject(Size, Alignment, false);
@@ -4079,8 +4079,8 @@ static bool getSVECalleeSaveSlotRange(const MachineFrameInfo &MFI,
 
   const std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
   for (auto &CS : CSI) {
-    if (AArch64::ZPRRegClass.contains(CS.getReg()) ||
-        AArch64::PPRRegClass.contains(CS.getReg())) {
+    if (AArch64::RegClass(AArch64::ZPRRegClassID)->contains(CS.getReg()) ||
+        AArch64::RegClass(AArch64::PPRRegClassID)->contains(CS.getReg())) {
       assert((Max == std::numeric_limits<int>::min() ||
               Max + 1 == CS.getFrameIdx()) &&
              "SVE CalleeSaves are not consecutive");
@@ -4226,7 +4226,7 @@ void AArch64FrameLowering::processFunctionBeforeFrameFinalized(
   DebugLoc DL;
   RS->enterBasicBlockEnd(MBB);
   RS->backward(MBBI);
-  Register DstReg = RS->FindUnusedReg(&AArch64::GPR64commonRegClass);
+  Register DstReg = RS->FindUnusedReg(AArch64::RegClass(AArch64::GPR64commonRegClassID));
   assert(DstReg && "There must be a free register after frame setup");
   BuildMI(MBB, MBBI, DL, TII.get(AArch64::MOVi64imm), DstReg).addImm(-2);
   BuildMI(MBB, MBBI, DL, TII.get(AArch64::STURXi))
@@ -4307,7 +4307,7 @@ void TagStoreEdit::emitUnrolled(MachineBasicBlock::iterator InsertI) {
       // that case, BaseRegOffsetBytes will not be aligned to 16 bytes, which
       // is required for the offset of ST2G.
       BaseRegOffsetBytes % 16 != 0) {
-    Register ScratchReg = MRI->createVirtualRegister(&AArch64::GPR64RegClass);
+    Register ScratchReg = MRI->createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
     emitFrameOffset(*MBB, InsertI, DL, ScratchReg, BaseReg,
                     StackOffset::getFixed(BaseRegOffsetBytes), TII);
     BaseReg = ScratchReg;
@@ -4345,8 +4345,8 @@ void TagStoreEdit::emitLoop(MachineBasicBlock::iterator InsertI) {
 
   Register BaseReg = FrameRegUpdate
                          ? FrameReg
-                         : MRI->createVirtualRegister(&AArch64::GPR64RegClass);
-  Register SizeReg = MRI->createVirtualRegister(&AArch64::GPR64RegClass);
+                         : MRI->createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
+  Register SizeReg = MRI->createVirtualRegister(AArch64::RegClass(AArch64::GPR64RegClassID));
 
   emitFrameOffset(*MBB, InsertI, DL, BaseReg, FrameReg, FrameRegOffset, TII);
 
@@ -5209,7 +5209,7 @@ void AArch64FrameLowering::emitRemarks(
 
           unsigned RegTy = StackAccess::AccessType::GPR;
           if (MFI.getStackID(FrameIdx) == TargetStackID::ScalableVector) {
-            if (AArch64::PPRRegClass.contains(MI.getOperand(0).getReg()))
+            if (AArch64::RegClass(AArch64::PPRRegClassID)->contains(MI.getOperand(0).getReg()))
               RegTy = StackAccess::PPR;
             else
               RegTy = StackAccess::FPR;

@@ -1059,22 +1059,22 @@ bool AArch64AsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNum,
         const TargetRegisterClass *RC;
         switch (ExtraCode[0]) {
         case 'b':
-          RC = &AArch64::FPR8RegClass;
+          RC = AArch64::RegClass(AArch64::FPR8RegClassID);
           break;
         case 'h':
-          RC = &AArch64::FPR16RegClass;
+          RC = AArch64::RegClass(AArch64::FPR16RegClassID);
           break;
         case 's':
-          RC = &AArch64::FPR32RegClass;
+          RC = AArch64::RegClass(AArch64::FPR32RegClassID);
           break;
         case 'd':
-          RC = &AArch64::FPR64RegClass;
+          RC = AArch64::RegClass(AArch64::FPR64RegClassID);
           break;
         case 'q':
-          RC = &AArch64::FPR128RegClass;
+          RC = AArch64::RegClass(AArch64::FPR128RegClassID);
           break;
         case 'z':
-          RC = &AArch64::ZPRRegClass;
+          RC = AArch64::RegClass(AArch64::ZPRRegClassID);
           break;
         default:
           return true;
@@ -1092,24 +1092,24 @@ bool AArch64AsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNum,
     Register Reg = MO.getReg();
 
     // If this is a w or x register, print an x register.
-    if (AArch64::GPR32allRegClass.contains(Reg) ||
-        AArch64::GPR64allRegClass.contains(Reg))
+    if (AArch64::RegClass(AArch64::GPR32allRegClassID)->contains(Reg) ||
+        AArch64::RegClass(AArch64::GPR64allRegClassID)->contains(Reg))
       return printAsmMRegister(MO, 'x', O);
 
     // If this is an x register tuple, print an x register.
-    if (AArch64::GPR64x8ClassRegClass.contains(Reg))
+    if (AArch64::RegClass(AArch64::GPR64x8ClassRegClassID)->contains(Reg))
       return printAsmMRegister(MO, 't', O);
 
     unsigned AltName = AArch64::NoRegAltName;
     const TargetRegisterClass *RegClass;
-    if (AArch64::ZPRRegClass.contains(Reg)) {
-      RegClass = &AArch64::ZPRRegClass;
-    } else if (AArch64::PPRRegClass.contains(Reg)) {
-      RegClass = &AArch64::PPRRegClass;
-    } else if (AArch64::PNRRegClass.contains(Reg)) {
-      RegClass = &AArch64::PNRRegClass;
+    if (AArch64::RegClass(AArch64::ZPRRegClassID)->contains(Reg)) {
+      RegClass = AArch64::RegClass(AArch64::ZPRRegClassID);
+    } else if (AArch64::RegClass(AArch64::PPRRegClassID)->contains(Reg)) {
+      RegClass = AArch64::RegClass(AArch64::PPRRegClassID);
+    } else if (AArch64::RegClass(AArch64::PNRRegClassID)->contains(Reg)) {
+      RegClass = AArch64::RegClass(AArch64::PNRRegClassID);
     } else {
-      RegClass = &AArch64::FPR128RegClass;
+      RegClass = AArch64::RegClass(AArch64::FPR128RegClassID);
       AltName = AArch64::vreg;
     }
 
@@ -1684,7 +1684,7 @@ void AArch64AsmPrinter::emitMovXReg(Register Dest, Register Src) {
 }
 
 void AArch64AsmPrinter::emitMOVZ(Register Dest, uint64_t Imm, unsigned Shift) {
-  bool Is64Bit = AArch64::GPR64RegClass.contains(Dest);
+  bool Is64Bit = AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Dest);
   EmitToStreamer(*OutStreamer,
                  MCInstBuilder(Is64Bit ? AArch64::MOVZXi : AArch64::MOVZWi)
                      .addReg(Dest)
@@ -1693,7 +1693,7 @@ void AArch64AsmPrinter::emitMOVZ(Register Dest, uint64_t Imm, unsigned Shift) {
 }
 
 void AArch64AsmPrinter::emitMOVK(Register Dest, uint64_t Imm, unsigned Shift) {
-  bool Is64Bit = AArch64::GPR64RegClass.contains(Dest);
+  bool Is64Bit = AArch64::RegClass(AArch64::GPR64RegClassID)->contains(Dest);
   EmitToStreamer(*OutStreamer,
                  MCInstBuilder(Is64Bit ? AArch64::MOVKXi : AArch64::MOVKWi)
                      .addReg(Dest)

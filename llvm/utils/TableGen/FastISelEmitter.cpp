@@ -674,7 +674,7 @@ void FastISelMap::emitInstructionCode(raw_ostream &OS,
       Operands.PrintManglingSuffix(OS, Memo.PhysRegs, ImmediatePredicates,
                                    true);
       OS << "(" << InstNS << "::" << Memo.Name << ", ";
-      OS << "&" << InstNS << "::" << Memo.RC->getName() << "RegClass";
+      OS << InstNS << "::RegClass(" << InstNS << "::" << Memo.RC->getIdName() << ")";
       if (!Operands.empty())
         OS << ", ";
       Operands.PrintArguments(OS, Memo.PhysRegs);

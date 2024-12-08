@@ -1916,8 +1916,8 @@ bool GCNHazardRecognizer::fixShift64HighRegBug(MachineInstr *MI) {
   static_assert(AMDGPU::VGPR0 + 1 == AMDGPU::VGPR1);
 
   Register NewReg;
-  for (MCRegister Reg : Overlapped ? AMDGPU::VReg_64_Align2RegClass
-                                   : AMDGPU::VGPR_32RegClass) {
+  for (MCRegister Reg : *AMDGPU::RegClass(Overlapped ? AMDGPU::VReg_64_Align2RegClassID
+                                   : AMDGPU::VGPR_32RegClassID)) {
     if (!MI->modifiesRegister(Reg, &TRI) && !MI->readsRegister(Reg, &TRI)) {
       NewReg = Reg;
       break;
